@@ -1,21 +1,21 @@
 <div align="center">
   <img src="https://pan.samyyc.dev/s/VYmMXE" />
-  <h2><strong>WeaponPaints</strong></h2>
+  <h2><strong>WeaponSkins</strong></h2>
   <h3>No description.</h3>
 </div>
 
 <p align="center">
   <img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build Status">
-  <img src="https://img.shields.io/github/downloads/samyyc/WeaponPaints/total" alt="Downloads">
-  <img src="https://img.shields.io/github/stars/samyyc/WeaponPaints?style=flat&logo=github" alt="Stars">
-  <img src="https://img.shields.io/github/license/samyyc/WeaponPaints" alt="License">
+  <img src="https://img.shields.io/github/downloads/samyyc/WeaponSkins/total" alt="Downloads">
+  <img src="https://img.shields.io/github/stars/samyyc/WeaponSkins?style=flat&logo=github" alt="Stars">
+  <img src="https://img.shields.io/github/license/samyyc/WeaponSkins" alt="License">
 </p>
 
 ## Getting Started (delete me)
 
 1. **Edit `PluginMetadata` Attribute**  
    - Set your plugin's `Id`, `Name`, `Version`, `Author` and `Description`.
-2. **Edit `WeaponPaints.csproj`**  
+2. **Edit `WeaponSkins.csproj`**  
    - Set the `<AssemblyName>` property to match your plugin's main class name.
    - Add any additional dependencies as needed.
 3. **Implement your plugin logic** in C#.

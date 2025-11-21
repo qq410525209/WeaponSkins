@@ -11,6 +11,10 @@
     "windows": 40,
     "linux": 40
   },
+  "CPlayerInventory::SOCreated": {
+    "windows": 0,
+    "linux": 0
+  },
   "CPlayerInventory::SOUpdated": {
     "windows": 1,
     "linux": 1
@@ -19,7 +23,7 @@
     "windows": 2,
     "linux": 2
   },
-  "CPlayerInventory::SoCacheSubscribed": {
+  "CPlayerInventory::SOCacheSubscribed": {
     "windows": 3,
     "linux": 3
   },
@@ -30,6 +34,10 @@
   "CCSPlayerInventory::m_pSOCache": {
     "windows": 104,
     "linux": 104
+  },
+  "CCSPlayerInventory::m_Items": {
+    "windows": 32,
+    "linux": 32
   },
   "CCSInventoryManager::m_DefaultLoadouts": {
     "windows": 112,
