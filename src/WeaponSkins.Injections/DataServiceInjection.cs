@@ -9,6 +9,7 @@ public static class DataServiceInjection
         return services
             .AddSingleton<WeaponDataService>()
             .AddSingleton<KnifeDataService>()
+            .AddSingleton<GloveDataService>()
             .AddSingleton<DataService>();
     }
 

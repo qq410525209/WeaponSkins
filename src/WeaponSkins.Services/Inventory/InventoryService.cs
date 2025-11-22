@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.Extensions.Logging;
 
 using SwiftlyS2.Shared;
@@ -83,9 +85,33 @@ public class InventoryService
         }
     }
 
-    public void InitializeInventory(CCSPlayerController_InventoryServices service)
+    public void UpdateGloveSkins(ulong steamid,
+        IEnumerable<GloveData> gloves)
     {
-        var inventory = new CCSPlayerInventory(service.Address + NativeService.CCSPlayerController_InventoryServices_m_pInventoryOffset);
+        Logger.LogInformation($"UpdateSkin: {steamid}");
+        if (SubscribedInventories.TryGetValue(steamid, out var inventory))
+        {
+            Logger.LogInformation($"UpdateSkin: {steamid}");
+            foreach (var glove in gloves)
+            {
+                inventory.UpdateGloveSkin(glove);
+            }
+        }
+    }
+
+    public bool TryInitializeInventory(CCSPlayerController_InventoryServices service,
+        [MaybeNullWhen(false)] out CCSPlayerInventory inventory)
+    {
+        inventory =
+            new CCSPlayerInventory(service.Address +
+                                   NativeService.CCSPlayerController_InventoryServices_m_pInventoryOffset);
+        if (!inventory.IsValid)
+        {
+            inventory = null;
+            return false;
+        }
+
         SubscribedInventories[inventory.SteamID] = inventory;
+        return true;
     }
 }

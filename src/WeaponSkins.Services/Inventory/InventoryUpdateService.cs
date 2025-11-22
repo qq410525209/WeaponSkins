@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 
 using SwiftlyS2.Shared;
+using SwiftlyS2.Shared.SchemaDefinitions;
 
 using WeaponSkins.Extensions;
 using WeaponSkins.Shared;
@@ -37,8 +38,10 @@ public class InventoryUpdateService
         {
             if (player.Controller is { IsValid: true, InventoryServices.IsValid: true } controller)
             {
-                InventoryService.InitializeInventory(controller.InventoryServices!);
-                Update(InventoryService.Get(player.SteamID));
+                if (InventoryService.TryInitializeInventory(controller.InventoryServices!, out var inventory))
+                {
+                    Update(inventory);
+                }
             }
         }
     }
@@ -137,6 +140,64 @@ public class InventoryUpdateService
                             Core.Scheduler.NextTick(() =>
                             {
                                 player.RegiveKnife(knife.DefinitionIndex);
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void UpdateGloveSkins(IEnumerable<GloveData> gloves)
+    {
+        Dictionary<ulong, List<GloveData>> updatedGloveMaps = new();
+        foreach (var glove in gloves)
+        {
+            if (DataService.GloveDataService.StoreGlove(glove))
+            {
+                updatedGloveMaps.GetOrAdd(glove.SteamID, () => new()).Add(glove);
+            }
+        }
+
+        foreach (var (steamID, updatedGloves) in updatedGloveMaps)
+        {
+            InventoryService.UpdateGloveSkins(steamID, updatedGloves);
+
+            if (PlayerService.TryGetPlayer(steamID, out var player))
+            {
+                if (player.IsAlive())
+                {
+                    foreach (var glove in updatedGloves)
+                    {
+                        if (player.Controller.Team == glove.Team)
+                        {
+                            Core.Scheduler.NextWorldUpdate(() =>
+                            {
+                                var model = player.PlayerPawn!.CBodyComponent!.SceneNode.GetSkeletonInstance()
+                                    .ModelState
+                                    .ModelName;
+                                player.PlayerPawn.SetModel("characters/models/tm_jumpsuit/tm_jumpsuit_varianta.vmdl");
+                                player.PlayerPawn.SetModel(model);
+                                var econGloves = player.PlayerPawn.EconGloves;
+                                // player.PlayerPawn.EconGloves.Initialized = false;
+                                // player.PlayerPawn.EconGloves.InitializedUpdated();
+                                econGloves.Initialized = true;
+
+                                Core.Scheduler.NextWorldUpdate(() =>
+                                {
+                                    var itemInLoadout = InventoryService.Get(player.SteamID).GetItemInLoadout(glove.Team, loadout_slot_t.LOADOUT_SLOT_CLOTHING_HANDS)!;
+                                    econGloves.ItemDefinitionIndex = itemInLoadout.ItemDefinitionIndex;
+                                    econGloves.AccountID = itemInLoadout.AccountID;
+                                    econGloves.ItemID = itemInLoadout.ItemID;
+                                    econGloves.ItemIDHigh = itemInLoadout.ItemIDHigh;
+                                    econGloves.ItemIDLow = itemInLoadout.ItemIDLow;
+                                    econGloves.InventoryPosition = itemInLoadout.InventoryPosition;
+                                    econGloves.EntityLevel = itemInLoadout.EntityLevel;
+                                    econGloves.EntityQuality = itemInLoadout.EntityQuality;
+                                    NativeService.UpdateItemView.CallOriginal(
+                                        econGloves.Address, 0);
+                                    player.PlayerPawn.AcceptInput("SetBodygroup", "default_gloves,1");
+                                });
                             });
                         }
                     }

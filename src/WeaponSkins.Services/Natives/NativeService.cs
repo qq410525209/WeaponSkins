@@ -47,6 +47,12 @@ public class NativeService
     public delegate nint GetEconItemByItemIDDelegate(nint pInventory,
         ulong itemid);
 
+    public delegate nint GetItemInLoadoutDelegate(nint pInventory,
+        int team,
+        int slot);
+
+    public delegate nint UpdateItemViewDelegate(nint itemView, nint unk);
+
     public delegate nint CAttribute_String_NewDelegate(nint pAttributeString,
         nint pArena);
 
@@ -56,9 +62,11 @@ public class NativeService
     public required IUnmanagedFunction<SOCreatedDelegate> CPlayerInventory_SOCreated { get; init; }
     public required IUnmanagedFunction<SOUpdatedDelegate> CPlayerInventory_SOUpdated { get; init; }
     public required IUnmanagedFunction<SODestroyedDelegate> CPlayerInventory_SODestroyed { get; init; }
+    public required IUnmanagedFunction<GetItemInLoadoutDelegate> CPlayerInventory_GetItemInLoadout { get; init; }
     public required IUnmanagedFunction<SOCacheSubscribedDelegate> CPlayerInventory_SOCacheSubscribed { get; init; }
     public required IUnmanagedFunction<GetEconItemByItemIDDelegate> GetEconItemByItemID { get; init; }
     public required IUnmanagedFunction<CAttribute_String_NewDelegate> CAttribute_String_New { get; init; }
+    public required IUnmanagedFunction<UpdateItemViewDelegate> UpdateItemView { get; init; }
 
     public required int CCSPlayerInventory_LoadoutsOffset { get; init; }
     public required int CCSInventoryManager_m_DefaultLoadoutsOffset { get; init; }
@@ -111,6 +119,11 @@ public class NativeService
             Core.GameData.GetOffset("CPlayerInventory::SOCacheSubscribed")
         );
 
+        CPlayerInventory_GetItemInLoadout = Core.Memory.GetUnmanagedFunctionByVTable<GetItemInLoadoutDelegate>(
+            playerInventoryVtable,
+            Core.GameData.GetOffset("CPlayerInventory::GetItemInLoadout")
+        );
+
         var stringVtable = Core.Memory.GetVTableAddress("server", "CAttribute_String")!.Value;
         CAttribute_String_New = Core.Memory.GetUnmanagedFunctionByVTable<CAttribute_String_NewDelegate>(
             stringVtable,
@@ -123,6 +136,10 @@ public class NativeService
 
         GetEconItemByItemID = Core.Memory.GetUnmanagedFunctionByAddress<GetEconItemByItemIDDelegate>(
             Core.GameData.GetSignature("GetEconItemByItemID")
+        );
+
+        UpdateItemView = Core.Memory.GetUnmanagedFunctionByAddress<UpdateItemViewDelegate>(
+            Core.GameData.GetSignature("UpdateItemView")
         );
 
         CCSPlayerInventory_LoadoutsOffset = Core.GameData.GetOffset("CCSPlayerInventory::m_Loadouts");

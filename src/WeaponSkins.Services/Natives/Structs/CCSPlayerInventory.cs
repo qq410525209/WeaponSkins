@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 
+using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Shared.SchemaDefinitions;
@@ -11,8 +12,10 @@ namespace WeaponSkins;
 
 public class CCSPlayerInventory : INativeHandle
 {
+    [SwiftlyInject] private static ISwiftlyCore Core { get; set; } = null!;
+
     public nint Address { get; set; }
-    public bool IsValid => Address != 0;
+    public bool IsValid => Address != 0 && SOCache.IsValid;
 
     public ulong SteamID => SOCache.Owner.SteamID;
 
@@ -111,6 +114,13 @@ public class CCSPlayerInventory : INativeHandle
         return false;
     }
 
+    public CEconItemView? GetItemInLoadout(Team team,
+        loadout_slot_t slot)
+    {
+        var ptr = NativeService.CPlayerInventory_GetItemInLoadout.CallOriginal(Address, (int)team, (int)slot);
+        return ptr != 0 ? Helper.AsSchema<CEconItemView>(ptr) : null;
+    }
+
     private ulong GetHighestItemID()
     {
         return Items.Select(item => item.Value.ItemID).Where(IsValidItemID).Max();
@@ -174,78 +184,112 @@ public class CCSPlayerInventory : INativeHandle
 
     public void UpdateWeaponSkin(WeaponSkinData skinData)
     {
-        Console.WriteLine("UpdateWeaponSkin: {0}", skinData.ToString());
-        Console.WriteLine("UpdateWeaponSkin: Creating item");
-        var item = NativeService.CreateCEconItemInstance();
-        // Already has a skin
-        Console.WriteLine("UpdateWeaponSkin: Trying to get item ID");
-        if (TryGetItemID(skinData.Team, skinData.DefinitionIndex, out var itemID))
+        Core.Scheduler.NextWorldUpdate(() =>
         {
-            Console.WriteLine("UpdateWeaponSkin: Item ID found");
-            var oldItem =
-                GetEconItemByItemID(itemID); // this should never be null, since item id is already in loadouts
-            if (oldItem == null)
+            Console.WriteLine("UpdateWeaponSkin: {0}", skinData.ToString());
+            Console.WriteLine("UpdateWeaponSkin: Creating item");
+            var item = NativeService.CreateCEconItemInstance();
+            // Already has a skin
+            Console.WriteLine("UpdateWeaponSkin: Trying to get item ID");
+            if (TryGetItemID(skinData.Team, skinData.DefinitionIndex, out var itemID))
             {
-                throw new Exception($"GetEconItemByItemID returned null for item id {itemID}");
+                Console.WriteLine("UpdateWeaponSkin: Item ID found");
+                var oldItem =
+                    GetEconItemByItemID(itemID); // this should never be null, since item id is already in loadouts
+                if (oldItem == null)
+                {
+                    throw new Exception($"GetEconItemByItemID returned null for item id {itemID}");
+                }
+
+                Console.WriteLine("UpdateWeaponSkin: Item found");
+                item.AccountID = oldItem.AccountID;
+                item.ItemID = oldItem.ItemID;
+                item.InventoryPosition = oldItem.InventoryPosition;
+                item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
+                item.ItemID = GetNewItemID();
+                Console.WriteLine("UpdateWeaponSkin: New item ID set to {0}", item.ItemID);
+                item.InventoryPosition = GetNewInventoryPosition();
+                Console.WriteLine("UpdateWeaponSkin: New inventory position set to {0}", item.InventoryPosition);
+                Console.WriteLine("UpdateWeaponSkin: Item copied");
+                SOCache.RemoveObject(oldItem);
+                Console.WriteLine("UpdateWeaponSkin: Removing item");
+                SODestroyed(SteamID, oldItem);
+                Console.WriteLine("UpdateWeaponSkin: Item destroyed");
+                UpdateLoadoutItem(skinData.Team, skinData.DefinitionIndex, item.ItemID);
+            }
+            else
+            {
+                Console.WriteLine("UpdateWeaponSkin: No item ID found");
+                item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
+                // not sure if it will work
+                Console.WriteLine("UpdateWeaponSkin: Getting new item ID");
+                item.ItemID = GetNewItemID();
+                item.InventoryPosition = GetNewInventoryPosition();
+                Console.WriteLine("UpdateWeaponSkin: New item ID set");
+                UpdateLoadoutItem(skinData.Team, skinData.DefinitionIndex, item.ItemID);
             }
 
-            Console.WriteLine("UpdateWeaponSkin: Item found");
-            item.AccountID = oldItem.AccountID;
-            item.ItemID = oldItem.ItemID;
-            item.InventoryPosition = oldItem.InventoryPosition;
-            item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
-            item.ItemID = GetNewItemID();
-            Console.WriteLine("UpdateWeaponSkin: New item ID set to {0}", item.ItemID);
-            item.InventoryPosition = GetNewInventoryPosition();
-            Console.WriteLine("UpdateWeaponSkin: New inventory position set to {0}", item.InventoryPosition);
-            Console.WriteLine("UpdateWeaponSkin: Item copied");
-            SOCache.RemoveObject(oldItem);
-            Console.WriteLine("UpdateWeaponSkin: Removing item");
-            SODestroyed(SteamID, oldItem);
-            Console.WriteLine("UpdateWeaponSkin: Item destroyed");
-            UpdateLoadoutItem(skinData.Team, skinData.DefinitionIndex, item.ItemID);
-        }
-        else
-        {
-            Console.WriteLine("UpdateWeaponSkin: No item ID found");
-            item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
-            // not sure if it will work
-            Console.WriteLine("UpdateWeaponSkin: Getting new item ID");
-            item.ItemID = GetNewItemID();
-            item.InventoryPosition = GetNewInventoryPosition();
-            Console.WriteLine("UpdateWeaponSkin: New item ID set");
-            UpdateLoadoutItem(skinData.Team, skinData.DefinitionIndex, item.ItemID);
-        }
+            Console.WriteLine("UpdateWeaponSkin: Applying skin data");
 
-        Console.WriteLine("UpdateWeaponSkin: Applying skin data");
-
-        item.Apply(skinData);
-        Console.WriteLine("UpdateWeaponSkin: Adding item to SOCache");
-        SOCache.AddObject(item);
-        Console.WriteLine("UpdateWeaponSkin: Item added to SOCache");
-        SOCreated(SteamID, item);
-        SOUpdated(SteamID, item);
-        Console.WriteLine("UpdateWeaponSkin: Item updated");
+            item.Apply(skinData);
+            Console.WriteLine("UpdateWeaponSkin: Adding item to SOCache");
+            SOCache.AddObject(item);
+            Console.WriteLine("UpdateWeaponSkin: Item added to SOCache");
+            SOCreated(SteamID, item);
+            SOUpdated(SteamID, item);
+            Console.WriteLine("UpdateWeaponSkin: Item updated");
+        });
     }
 
     public void UpdateKnifeSkin(KnifeSkinData skinData)
     {
-        Console.WriteLine("UpdateKnifeSkin: {0}", skinData.ToString());
-        // somehow the MELEE loadout keeps the old itemid
-        // by old i means IT CAN BE A ITEM THAT I SOLD TWO WEEKS AGO
+        Core.Scheduler.NextWorldUpdate(() =>
+        {
+            Console.WriteLine("UpdateKnifeSkin: {0}", skinData.ToString());
+            // somehow the MELEE loadout keeps the old itemid
+            // by old i means IT CAN BE A ITEM THAT I SOLD TWO WEEKS AGO
 
-        var item = NativeService.CreateCEconItemInstance();
-        ref var loadout = ref Loadouts[skinData.Team, loadout_slot_t.LOADOUT_SLOT_MELEE];
-        item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
-        // not sure if it will work
-        item.ItemID = GetNewItemID();
-        item.InventoryPosition = GetNewInventoryPosition();
-        loadout.ItemId = item.ItemID;
-        loadout.DefinitionIndex = skinData.DefinitionIndex;
-        item.Apply(skinData);
-        SOCache.AddObject(item);
-        SOCreated(SteamID, item);
-        SOUpdated(SteamID, item);
+            var item = NativeService.CreateCEconItemInstance();
+            ref var loadout = ref Loadouts[skinData.Team, loadout_slot_t.LOADOUT_SLOT_MELEE];
+            item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
+            // not sure if it will work
+            item.ItemID = GetNewItemID();
+            item.InventoryPosition = GetNewInventoryPosition();
+            loadout.ItemId = item.ItemID;
+            loadout.DefinitionIndex = skinData.DefinitionIndex;
+            item.Apply(skinData);
+            SOCache.AddObject(item);
+            SOCreated(SteamID, item);
+            SOUpdated(SteamID, item);
+        });
     }
 
+    public void UpdateGloveSkin(GloveData skinData)
+    {
+        Core.Scheduler.NextWorldUpdate(() =>
+        {
+            Console.WriteLine("UpdateGloveSkin: {0}", skinData.ToString());
+            var item = NativeService.CreateCEconItemInstance();
+            ref var loadout = ref Loadouts[skinData.Team, loadout_slot_t.LOADOUT_SLOT_CLOTHING_HANDS];
+            if (IsValidItemID(loadout.ItemId))
+            {
+                var oldItem = GetEconItemByItemID(loadout.ItemId);
+                if (oldItem != null)
+                {
+                    SOCache.RemoveObject(oldItem);
+                    SODestroyed(SteamID, oldItem);
+                }
+            }
+            item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
+            item.ItemID = GetNewItemID();
+            item.InventoryPosition = GetNewInventoryPosition();
+            loadout.ItemId = item.ItemID;
+            loadout.DefinitionIndex = skinData.DefinitionIndex;
+            item.Apply(skinData);
+            SOCache.AddObject(item);
+            SOCreated(SteamID, item);
+            SOUpdated(SteamID, item);
+            Console.WriteLine("UpdateGloveSkin: Item updated");
+        });
+    }
 }

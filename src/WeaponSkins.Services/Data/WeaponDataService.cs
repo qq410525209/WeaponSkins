@@ -9,7 +9,9 @@ namespace WeaponSkins;
 
 public class WeaponDataService
 {
-    private readonly ConcurrentDictionary<ulong, ConcurrentDictionary<Team, ConcurrentDictionary<ushort, WeaponSkinData>>> _playerSkins = new();
+    private readonly
+        ConcurrentDictionary<ulong, ConcurrentDictionary<Team, ConcurrentDictionary<ushort, WeaponSkinData>>>
+        _playerSkins = new();
 
     /// <summary>
     /// Stores a weapon skin for a player.
@@ -24,7 +26,10 @@ public class WeaponDataService
         return teamSkins.UpdateOrAdd(skin.DefinitionIndex, skin);
     }
 
-    public bool TryGetSkin(ulong steamId, Team team, ushort definitionIndex, [MaybeNullWhen(false)] out WeaponSkinData skin)
+    public bool TryGetSkin(ulong steamId,
+        Team team,
+        ushort definitionIndex,
+        [MaybeNullWhen(false)] out WeaponSkinData skin)
     {
         skin = null;
         if (_playerSkins.TryGetValue(steamId, out var playerInventory))
@@ -37,20 +42,25 @@ public class WeaponDataService
                 }
             }
         }
+
         return false;
     }
 
-    public bool TryGetSkins(ulong steamId, Team team, [MaybeNullWhen(false)] out ConcurrentDictionary<ushort, WeaponSkinData> skins)
+    public bool TryGetSkins(ulong steamId,
+        Team team,
+        [MaybeNullWhen(false)] out ConcurrentDictionary<ushort, WeaponSkinData> skins)
     {
         skins = null;
         if (_playerSkins.TryGetValue(steamId, out var playerInventory))
         {
             return playerInventory.TryGetValue(team, out skins);
         }
+
         return false;
     }
 
-    public bool TryGetSkins(ulong steamId, [MaybeNullWhen(false)] out IEnumerable<WeaponSkinData> skins)
+    public bool TryGetSkins(ulong steamId,
+        [MaybeNullWhen(false)] out IEnumerable<WeaponSkinData> skins)
     {
         skins = null;
         if (_playerSkins.TryGetValue(steamId, out var playerInventory))
@@ -58,6 +68,7 @@ public class WeaponDataService
             skins = playerInventory.Values.SelectMany(teamSkins => teamSkins.Values);
             return true;
         }
+
         return false;
     }
 

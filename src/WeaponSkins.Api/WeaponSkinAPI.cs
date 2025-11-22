@@ -21,4 +21,9 @@ public class WeaponSkinAPI : IWeaponSkinAPI
     {
         InventoryUpdateService.UpdateKnifeSkins(knives);
     }
+
+    public void UpdateGloveSkins(IEnumerable<GloveData> gloves)
+    {
+        InventoryUpdateService.UpdateGloveSkins(gloves);
+    }
 }

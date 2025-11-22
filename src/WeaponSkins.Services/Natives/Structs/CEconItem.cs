@@ -207,4 +207,16 @@ public class CEconItem : INativeHandle
             customData.SetPaintkitWear(data.PaintkitWear);
         });
     }
+
+    public void Apply(GloveData data)
+    {
+        Console.WriteLine("Apply: {0}", data);
+        DefinitionIndex = data.DefinitionIndex;
+        ConfigureAttributes(customData =>
+        {
+            customData.SetPaintkit(data.Paintkit);
+            customData.SetPaintkitSeed(data.PaintkitSeed);
+            customData.SetPaintkitWear(data.PaintkitWear);
+        });
+    }
 }
