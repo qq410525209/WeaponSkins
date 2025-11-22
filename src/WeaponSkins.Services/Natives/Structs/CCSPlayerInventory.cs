@@ -16,18 +16,15 @@ public class CCSPlayerInventory : INativeHandle
 
     public ulong SteamID => SOCache.Owner.SteamID;
 
-    private NativeService NativeService { get; init; }
+    private NativeService NativeService => StaticNativeService.Service;
 
-    public CCSPlayerInventory(nint address,
-        NativeService nativeService)
+    public CCSPlayerInventory(nint address)
     {
         Address = address;
-        NativeService = nativeService;
     }
 
     public CGCClientSharedObjectCache SOCache =>
-        new CGCClientSharedObjectCache(Address.Read<nint>(NativeService.CCSPlayerInventory_m_pSOCacheOffset),
-            NativeService);
+        new CGCClientSharedObjectCache(Address.Read<nint>(NativeService.CCSPlayerInventory_m_pSOCacheOffset));
 
     public void SODestroyed(ulong steamid,
         CEconItem item)

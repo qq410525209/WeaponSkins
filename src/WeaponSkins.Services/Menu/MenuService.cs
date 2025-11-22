@@ -47,13 +47,13 @@ public class MenuService
                 var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(paintkit.LocalizedNames["schinese"],
                     paintkit.Rarity.Color.HexColor));
 
-                option.Click += async (sender,
+                option.Click += (_,
                     args) =>
                 {
                     if (Debounce.TryGetValue(args.Player.SteamID, out var time) &&
                         DateTime.UtcNow.Ticks - time < 1000000)
                     {
-                        return;
+                        return ValueTask.CompletedTask;
                     }
 
                     var index = (ushort)EconService.Items[weapon].Index;
@@ -83,7 +83,7 @@ public class MenuService
                     }
 
                     Debounce[args.Player.SteamID] = DateTime.UtcNow.Ticks;
-                    await Task.CompletedTask;
+                    return ValueTask.CompletedTask;
                 };
 
                 skinMenu.AddOption(option);

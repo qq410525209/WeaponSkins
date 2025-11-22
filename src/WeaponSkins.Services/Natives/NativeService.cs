@@ -133,7 +133,7 @@ public class NativeService
         CGCClientSharedObjectCache_m_OwnerOffset =
             Core.GameData.GetOffset("GCSDK::CGCClientSharedObjectCache::m_Owner");
         var xrefCCSInventoryManager = Core.GameData.GetSignature("CCSInventoryManager_xref");
-        CCSInventoryManager = new CCSInventoryManager(Core.Memory.ResolveXrefAddress(xrefCCSInventoryManager)!, this);
+        CCSInventoryManager = new CCSInventoryManager(Core.Memory.ResolveXrefAddress(xrefCCSInventoryManager)!);
         CPlayerInventory_SOCacheSubscribed.AddHook(next =>
         {
             unsafe
@@ -145,7 +145,7 @@ public class NativeService
                     try
                     {
                         var ret = next()(pInventory, pSOID, pSOCache);
-                        var inventory = new CCSPlayerInventory(pInventory, this);
+                        var inventory = new CCSPlayerInventory(pInventory);
                         var a = inventory.Loadouts[Team.CT, loadout_slot_t.LOADOUT_SLOT_C4];
                         OnSOCacheSubscribed?.Invoke(inventory, *pSOID);
                         return ret;

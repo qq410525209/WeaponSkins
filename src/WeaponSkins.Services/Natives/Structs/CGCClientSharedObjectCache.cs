@@ -2,12 +2,12 @@ using SwiftlyS2.Shared.Natives;
 
 namespace WeaponSkins;
 
-public struct CGCClientSharedObjectCache(nint address, NativeService nativeService) : INativeHandle
+public struct CGCClientSharedObjectCache(nint address) : INativeHandle
 {
     public nint Address { get; set; } = address;
     public bool IsValid => Address != 0;
 
-    private NativeService NativeService { get; } = nativeService;
+    private NativeService NativeService => StaticNativeService.Service;
 
     public void AddObject(CEconItem item)
     {

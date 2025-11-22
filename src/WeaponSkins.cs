@@ -4,12 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using SwiftlyS2.Shared.Plugins;
 using SwiftlyS2.Shared;
-using SwiftlyS2.Shared.SchemaDefinitions;
-using SwiftlyS2.Shared.Schemas;
 using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Shared.Commands;
-
-using ValveKeyValue;
 
 using WeaponSkins.Services;
 using WeaponSkins.Shared;
@@ -85,7 +81,6 @@ public partial class WeaponSkins : BasePlugin
                 Schema = 1
             }
         });
-
     }
 
     public override void Unload()

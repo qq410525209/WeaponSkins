@@ -85,7 +85,7 @@ public class InventoryService
 
     public void InitializeInventory(CCSPlayerController_InventoryServices service)
     {
-        var inventory = new CCSPlayerInventory(service.Address + NativeService.CCSPlayerController_InventoryServices_m_pInventoryOffset, NativeService);
+        var inventory = new CCSPlayerInventory(service.Address + NativeService.CCSPlayerController_InventoryServices_m_pInventoryOffset);
         SubscribedInventories[inventory.SteamID] = inventory;
     }
 }
