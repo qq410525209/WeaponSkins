@@ -11,7 +11,7 @@
     "windows": "48 8B 05 ? ? ? ? 4C 8B 80",
     "linux": "48 8B 05 ? ? ? ? 4C 8B 80"
   },
-  // Has CEconItem vtable xref
+  // Has CEconItem vtable xref, with two parameters
   "GetEconItemByItemID": {
     "lib": "server",
     "windows": "48 89 74 24 ? 57 48 83 EC ? 48 8B FA 48 8B F1 48 85 D2 75 ? 33 C0",
