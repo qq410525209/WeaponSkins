@@ -280,6 +280,7 @@ public class EconService
                     {
                         definition.HexColor = remappedColor;
                     }
+
                     Colors[definition.Name] = definition;
                 }
             }
@@ -316,9 +317,7 @@ public class EconService
         foreach (var language in languages)
         {
             var languagePath = language.Split(':').Last();
-            var content = Core.GameFileSystem.ReadFile(languagePath, "GAME")[1..];
-            // var bytes = Encoding.UTF8.GetBytes(content);
-            // content = Encoding.Latin1.GetString(bytes);
+            var content = Core.GameFileSystem.ReadFile(languagePath, "GAME")[1..]; // BOM
             var reader = new StringReader(content);
             var languageName = languagePath.Split('/').Last().Split('\\').Last().Split('.').First().Split("_").Last();
             Languages[languageName] = new(StringComparer.OrdinalIgnoreCase);

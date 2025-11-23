@@ -18,7 +18,6 @@ public static class PlayerExtensions
         CBasePlayerWeapon weapon, ushort newIndex)
     {
         var name = Core.Helpers.GetClassnameByDefinitionIndex(newIndex)!;
-        Console.WriteLine(name);
         var clip1 = weapon.Clip1;
         var reservedAmmo = weapon.ReserveAmmo[0];
         player.PlayerPawn!.WeaponServices!.RemoveWeapon(weapon);

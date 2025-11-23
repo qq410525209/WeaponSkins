@@ -71,7 +71,7 @@ public class MenuService
                 option.Click += (_,
                     args) =>
                 {
-                    Api.UpdateWeaponSkins([
+                    Api.SetWeaponSkins([
                         new()
                         {
                             SteamID = args.Player.SteamID,
@@ -124,7 +124,7 @@ public class MenuService
                 option.Click += (_,
                     args) =>
                 {
-                    Api.UpdateKnifeSkins([
+                    Api.SetKnifeSkins([
                         new()
                         {
                             SteamID = args.Player.SteamID,
@@ -177,7 +177,7 @@ public class MenuService
                 option.Click += (_,
                     args) =>
                 {
-                    Api.UpdateGloveSkins([
+                    Api.SetGloveSkins([
                         new()
                         {
                             SteamID = args.Player.SteamID,

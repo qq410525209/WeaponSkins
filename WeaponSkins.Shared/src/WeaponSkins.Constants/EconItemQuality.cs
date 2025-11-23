@@ -17,4 +17,9 @@ public enum EconItemQuality : byte
     Tournament = 12, // Souvenir
     Highlight = 13,
     Volatile = 14,
+
+
+
+    StatTrak = 9,
+    Souvenir = 12
 }

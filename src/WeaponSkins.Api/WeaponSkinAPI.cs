@@ -12,17 +12,17 @@ public class WeaponSkinAPI : IWeaponSkinAPI
         InventoryUpdateService = inventoryUpdateService;
     }
 
-    public void UpdateWeaponSkins(IEnumerable<WeaponSkinData> skins)
+    public void SetWeaponSkins(IEnumerable<WeaponSkinData> skins)
     {
         InventoryUpdateService.UpdateWeaponSkins(skins);
     }
 
-    public void UpdateKnifeSkins(IEnumerable<KnifeSkinData> knives)
+    public void SetKnifeSkins(IEnumerable<KnifeSkinData> knives)
     {
         InventoryUpdateService.UpdateKnifeSkins(knives);
     }
 
-    public void UpdateGloveSkins(IEnumerable<GloveData> gloves)
+    public void SetGloveSkins(IEnumerable<GloveData> gloves)
     {
         InventoryUpdateService.UpdateGloveSkins(gloves);
     }

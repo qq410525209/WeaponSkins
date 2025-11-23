@@ -71,6 +71,14 @@ public class InventoryUpdateService
                     inventory.UpdateKnifeSkin(knife);
                 }
             }
+
+            if (DataService.GloveDataService.TryGetGloves(inventory.SteamID, out var gloves))
+            {
+                foreach (var glove in gloves)
+                {
+                    inventory.UpdateGloveSkin(glove);
+                }
+            }
         });
     }
 

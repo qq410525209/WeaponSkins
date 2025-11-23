@@ -2,9 +2,9 @@ namespace WeaponSkins.Shared;
 
 public interface IWeaponSkinAPI
 {
-    void UpdateWeaponSkins(IEnumerable<WeaponSkinData> skins);
+    void SetWeaponSkins(IEnumerable<WeaponSkinData> skins);
 
-    void UpdateKnifeSkins(IEnumerable<KnifeSkinData> knives);
+    void SetKnifeSkins(IEnumerable<KnifeSkinData> knives);
 
-    void UpdateGloveSkins(IEnumerable<GloveData> gloves);
+    void SetGloveSkins(IEnumerable<GloveData> gloves);
 }

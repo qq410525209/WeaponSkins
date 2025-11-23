@@ -9,12 +9,14 @@ public struct CCSInventoryManager : INativeHandle
 {
     public nint Address { get; set; }
     public bool IsValid => Address != 0;
+
     public CCSInventoryManager(nint address)
     {
         Address = address;
     }
 
-    private nint defaultLoadoutsStart => Address + StaticNativeService.Service.CCSInventoryManager_m_DefaultLoadoutsOffset;
+    private nint defaultLoadoutsStart =>
+        Address + StaticNativeService.Service.CCSInventoryManager_m_DefaultLoadoutsOffset;
 
     public IEnumerable<(loadout_slot_t, CEconItemView)> GetDefaultLoadouts(Team team)
     {

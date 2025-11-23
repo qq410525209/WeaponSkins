@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 using SwiftlyS2.Shared;
@@ -62,18 +63,18 @@ public class CCSPlayerInventory : INativeHandle
         }
     }
 
-    public CEconItem? GetEconItemByItemID(ulong itemid)
+    public bool TryGetEconItemByItemID(ulong itemid,
+        [MaybeNullWhen(false)] out CEconItem item)
     {
-        unsafe
+        var ptr = NativeService.GetEconItemByItemID.Call(Address, itemid);
+        if (ptr == 0)
         {
-            var ptr = NativeService.GetEconItemByItemID.Call(Address, itemid);
-            if (ptr == 0)
-            {
-                return null;
-            }
-
-            return new CEconItem(ptr);
+            item = null;
+            return false;
         }
+
+        item = new CEconItem(ptr);
+        return true;
     }
 
     public ref CUtlVector<PointerTo<CEconItemView>> Items =>
@@ -191,16 +192,9 @@ public class CCSPlayerInventory : INativeHandle
             var item = NativeService.CreateCEconItemInstance();
             // Already has a skin
             Console.WriteLine("UpdateWeaponSkin: Trying to get item ID");
-            if (TryGetItemID(skinData.Team, skinData.DefinitionIndex, out var itemID))
+            if (TryGetItemID(skinData.Team, skinData.DefinitionIndex, out var itemID) &&
+                TryGetEconItemByItemID(itemID, out var oldItem))
             {
-                Console.WriteLine("UpdateWeaponSkin: Item ID found");
-                var oldItem =
-                    GetEconItemByItemID(itemID); // this should never be null, since item id is already in loadouts
-                if (oldItem == null)
-                {
-                    throw new Exception($"GetEconItemByItemID returned null for item id {itemID}");
-                }
-
                 Console.WriteLine("UpdateWeaponSkin: Item found");
                 item.AccountID = oldItem.AccountID;
                 item.ItemID = oldItem.ItemID;
@@ -251,6 +245,13 @@ public class CCSPlayerInventory : INativeHandle
 
             var item = NativeService.CreateCEconItemInstance();
             ref var loadout = ref Loadouts[skinData.Team, loadout_slot_t.LOADOUT_SLOT_MELEE];
+
+            if (IsValidItemID(loadout.ItemId) && TryGetEconItemByItemID(loadout.ItemId, out var oldItem))
+            {
+                SOCache.RemoveObject(oldItem);
+                SODestroyed(SteamID, oldItem);
+            }
+
             item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
             // not sure if it will work
             item.ItemID = GetNewItemID();
@@ -271,15 +272,12 @@ public class CCSPlayerInventory : INativeHandle
             Console.WriteLine("UpdateGloveSkin: {0}", skinData.ToString());
             var item = NativeService.CreateCEconItemInstance();
             ref var loadout = ref Loadouts[skinData.Team, loadout_slot_t.LOADOUT_SLOT_CLOTHING_HANDS];
-            if (IsValidItemID(loadout.ItemId))
+            if (IsValidItemID(loadout.ItemId) && TryGetEconItemByItemID(loadout.ItemId, out var oldItem))
             {
-                var oldItem = GetEconItemByItemID(loadout.ItemId);
-                if (oldItem != null)
-                {
-                    SOCache.RemoveObject(oldItem);
-                    SODestroyed(SteamID, oldItem);
-                }
+                SOCache.RemoveObject(oldItem);
+                SODestroyed(SteamID, oldItem);
             }
+
             item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
             item.ItemID = GetNewItemID();
             item.InventoryPosition = GetNewInventoryPosition();
