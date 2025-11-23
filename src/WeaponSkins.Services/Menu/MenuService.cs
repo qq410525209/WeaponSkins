@@ -36,6 +36,7 @@ public class MenuService
         main.AddOption(new SubmenuMenuOption("Weapon Skins", BuildWeaponSkinMenu(player)));
         main.AddOption(new SubmenuMenuOption("Knife Skins", BuildKnifeSkinMenu(player)));
         main.AddOption(new SubmenuMenuOption("Glove Skins", BuildGloveSkinMenu(player)));
+        main.AddOption(new SubmenuMenuOption("Sticker Collections", BuildStickerMenu(player)));
 
         Core.MenusAPI.OpenMenuForPlayer(player, main.Build());
     }
@@ -199,4 +200,31 @@ public class MenuService
 
         return main.Build();
     }
+
+    public IMenuAPI BuildStickerMenu(IPlayer player)
+    {
+        var main = Core.MenusAPI.CreateBuilder();
+        main.Design.SetMenuTitle("Sticker Collections");
+
+        foreach (var (index, stickerCollection) in EconService.StickerCollections)
+        {
+            var stickerMenu = Core.MenusAPI.CreateBuilder();
+            stickerMenu.Design.SetMenuTitle(stickerCollection.LocalizedNames["schinese"]);
+
+            foreach(var sticker in stickerCollection.Stickers)
+            {
+                var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(sticker.LocalizedNames["schinese"],
+                    sticker.Rarity.Color.HexColor));
+                option.Click += (_, args) =>
+                {
+                    return ValueTask.CompletedTask;
+                };
+                stickerMenu.AddOption(option);
+            }
+
+            main.AddOption(new SubmenuMenuOption(stickerCollection.LocalizedNames["schinese"], stickerMenu.Build()));
+        }
+
+        return main.Build();
+    }   
 }

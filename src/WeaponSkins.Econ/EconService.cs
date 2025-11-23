@@ -18,6 +18,10 @@ public class EconService
     private ILogger<EconService> Logger { get; init; }
 
     public Dictionary<string /* Name */, ItemDefinition> Items { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public Dictionary<string /* Name */, ClientLootListDefinition> ClientLootLists { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public List<string> NamedWeapons { get; set; } = new();
     public Dictionary<string /* Name */, RarityDefinition> Rarities { get; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string /* Name */, ColorDefinition> Colors { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -26,22 +30,16 @@ public class EconService
     public Dictionary<string /* Name */, List<PaintkitDefinition>> WeaponToPaintkits { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
-    public Dictionary<string /* Collection */, List<StickerDefinition>> Stickers { get; } =
+    public Dictionary<string /* Name */, StickerDefinition> Stickers { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    public Dictionary<string /* Name */, StickerCollectionDefinition> StickerCollections { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
     public Dictionary<string /* Name */, KeychainDefinition> Keychains { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     private Dictionary<string /* Language */, Dictionary<string /* Key */, string /* Value */>> Languages { get; } =
         new(StringComparer.OrdinalIgnoreCase);
-
-    private Dictionary<string, string> _RemappedRarityColor = new()
-    {
-        ["desc_legendary"] = "#eb4b4b",
-        ["desc_mythical"] = "#d32ce6",
-        ["desc_rare"] = "#8847ff",
-        ["desc_uncommon"] = "#4b69ff",
-        ["desc_common"] = "#5e98d9",
-    };
 
     public EconService(ISwiftlyCore core,
         ILogger<EconService> logger)
@@ -63,29 +61,46 @@ public class EconService
         ParseLanguages();
         Logger.LogInformation($"Parsed {Languages.Count} languages in {watch.ElapsedMilliseconds}ms.");
         watch.Restart();
+
         ParseColors();
         Logger.LogInformation($"Parsed {Colors.Count} colors in {watch.ElapsedMilliseconds}ms.");
         watch.Restart();
+
         ParseRarities();
         Logger.LogInformation($"Parsed {Rarities.Count} rarities in {watch.ElapsedMilliseconds}ms.");
         watch.Restart();
-        ParseWeapons();
+
+        ParseClientLootLists();
+        Logger.LogInformation($"Parsed {ClientLootLists.Count} client loot lists in {watch.ElapsedMilliseconds}ms.");
         watch.Restart();
+
+        ParseWeapons();
         Logger.LogInformation($"Parsed {Items.Count} items in {watch.ElapsedMilliseconds}ms.");
+        watch.Restart();
+
         ParsePaintkits();
         Logger.LogInformation($"Parsed {Paintkits.Count} paintkits in {watch.ElapsedMilliseconds}ms.");
         watch.Restart();
+
         ParseWeaponToPaintkits();
         Logger.LogInformation(
             $"Parsed {WeaponToPaintkits.Count} weapon to paintkits in {watch.ElapsedMilliseconds}ms.");
         watch.Restart();
+
         ParseStickers();
         Logger.LogInformation(
-            $"Parsed {Stickers.Count} sticker collections (stickers count: {Stickers.Values.Sum(s => s.Count)}) in {watch.ElapsedMilliseconds}ms.");
+            $"Parsed {Stickers.Count} stickers in {watch.ElapsedMilliseconds}ms.");
         watch.Restart();
+
+        ParseStickerCollections();
+        Logger.LogInformation(
+            $"Parsed {StickerCollections.Count} sticker collections in {watch.ElapsedMilliseconds}ms.");
+        watch.Restart();
+
         ParseKeychains();
         Logger.LogInformation($"Parsed {Keychains.Count} keychains in {watch.ElapsedMilliseconds}ms.");
         watch.Restart();
+
         Logger.LogInformation($"Finished parsing data in {totalWatch.ElapsedMilliseconds}ms.");
 
         Core.Profiler.RecordTime("ParseEcon", totalWatch.ElapsedMilliseconds);
@@ -124,38 +139,70 @@ public class EconService
         //             JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         //     }));
 
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder =
+                JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+
         File.WriteAllText(Path.Combine(dataDirectory, "weapon_to_paintkits.json"),
-            JsonSerializer.Serialize(WeaponToPaintkits, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder =
-                    JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            }));
+            JsonSerializer.Serialize(WeaponToPaintkits, options));
 
         File.WriteAllText(Path.Combine(dataDirectory, "items.json"),
-            JsonSerializer.Serialize(Items, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder =
-                    JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            }));
+            JsonSerializer.Serialize(Items, options));
 
         File.WriteAllText(Path.Combine(dataDirectory, "stickers.json"),
-            JsonSerializer.Serialize(Stickers, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder =
-                    JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            }));
+            JsonSerializer.Serialize(Stickers, options));
+
+        File.WriteAllText(Path.Combine(dataDirectory, "sticker_collections.json"),
+            JsonSerializer.Serialize(StickerCollections, options));
 
         File.WriteAllText(Path.Combine(dataDirectory, "keychains.json"),
-            JsonSerializer.Serialize(Keychains, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder =
-                    JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            }));
+            JsonSerializer.Serialize(Keychains, options));
         Languages.Clear();
+    }
+
+    private RarityDefinition RemapItemRarity(string rarityName)
+    {
+        var original = Rarities[rarityName].Id;
+        if (original >= 6)
+        {
+            return Rarities[rarityName];
+        }
+        return Rarities.FirstOrDefault(r => r.Value.Id == original + 1).Value;
+    }
+
+    private Dictionary<string, string> GetLocalizedNames(string key)
+    {
+        if (key.StartsWith("#"))
+        {
+            key = key.Substring(1);
+        }
+
+        var localizedNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var notFoundLanguages = new List<string>();
+        foreach (var (languageName, tokens) in Languages)
+        {
+            if (tokens.TryGetValue(key, out var value))
+            {
+                localizedNames[languageName] = value;
+            }
+            else
+            {
+                notFoundLanguages.Add(languageName);
+            }
+        }
+
+        if (localizedNames.ContainsKey("english"))
+        {
+            foreach (var notfoundLanguage in notFoundLanguages)
+            {
+                localizedNames[notfoundLanguage] = localizedNames["english"];
+            }
+        }
+
+        return localizedNames;
     }
 
     public void ParseWeapons()
@@ -239,22 +286,11 @@ public class EconService
                         itemName = prefab["item_name"].EToString();
                     }
 
-                    var key = itemName.Replace("#", "");
-
-                    var localizedNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var (languageName, tokens) in Languages)
-                    {
-                        if (tokens.TryGetValue(key, out var value))
-                        {
-                            localizedNames[languageName] = value;
-                        }
-                    }
-
                     var definition = new ItemDefinition
                     {
                         Name = item.Value["name"].EToString(),
                         Index = int.Parse(item.Name),
-                        LocalizedNames = localizedNames
+                        LocalizedNames = GetLocalizedNames(itemName)
                     };
                     Items[definition.Name] = definition;
                 }
@@ -276,10 +312,6 @@ public class EconService
                     {
                         Name = color.Name, HexColor = color.Value["hex_color"].EToString()
                     };
-                    if (_RemappedRarityColor.TryGetValue(definition.Name, out var remappedColor))
-                    {
-                        definition.HexColor = remappedColor;
-                    }
 
                     Colors[definition.Name] = definition;
                 }
@@ -353,6 +385,105 @@ public class EconService
         }
     }
 
+    public void ParseClientLootLists()
+    {
+        var lootEntries = new Dictionary<string, KVObject>();
+        foreach (var keys in Root.Children)
+        {
+            if (keys.Name == "client_loot_lists")
+            {
+                foreach (var item in keys.Children)
+                {
+                    lootEntries[item.Name] = item;
+                }
+            }
+        }
+
+        var patches = new Dictionary<string, List<string>>()
+        {
+            ["crate_signature_pack_eslcologne2015_group_1"] =
+            [
+                "crate_signature_pack_eslcologne2015_group_1_rare",
+                "crate_signature_pack_eslcologne2015_group_1_legendary"
+            ],
+            ["crate_signature_pack_eslcologne2015_group_2"] =
+            [
+                "crate_signature_pack_eslcologne2015_group_2_rare",
+                "crate_signature_pack_eslcologne2015_group_2_legendary"
+            ],
+            ["crate_signature_pack_eslcologne2015_group_3"] =
+            [
+                "crate_signature_pack_eslcologne2015_group_3_rare",
+                "crate_signature_pack_eslcologne2015_group_3_legendary"
+            ],
+            ["crate_signature_pack_eslcologne2015_group_4"] =
+            [
+                "crate_signature_pack_eslcologne2015_group_4_rare",
+                "crate_signature_pack_eslcologne2015_group_4_legendary"
+            ],
+            ["crate_signature_pack_cluj2015_group_1"] = 
+            [
+                "crate_signature_pack_cluj2015_group_1_rare",
+                "crate_signature_pack_cluj2015_group_1_legendary"
+            ],
+            ["crate_signature_pack_cluj2015_group_2"] =
+            [
+                "crate_signature_pack_cluj2015_group_2_rare",
+                "crate_signature_pack_cluj2015_group_2_legendary"
+            ],
+        };
+
+        foreach (var (name, items) in patches)
+        {
+            var values = items.Select(item => new KVObject(item, "1"));
+            var obj = new KVObject(name, values);
+            lootEntries[name] = obj;
+        }
+
+
+        foreach (var (name, item) in lootEntries)
+        {
+            foreach (var child in item.Children)
+            {
+                if (child.Name.Contains("["))
+                {
+                    goto notMainEntry;
+                }
+            }
+
+            var items = new List<ClientLootItemDefinition>();
+
+            foreach (var child in item.Children)
+            {
+                if (lootEntries.TryGetValue(child.Name, out var collection))
+                {
+                    foreach (var collectionChild in collection.Children)
+                    {
+                        var split = collectionChild.Name.Split("]");
+
+                        if (split.Length != 2)
+                        {
+                            continue;
+                        }
+
+                        var itemName = split[0][1..];
+                        var belongingItemName = split[1];
+
+                        items.Add(new ClientLootItemDefinition
+                        {
+                            Name = itemName, BelongingItemName = belongingItemName,
+                        });
+                    }
+                }
+            }
+
+            var definition = new ClientLootListDefinition { Name = name, Items = items, };
+            ClientLootLists[definition.Name] = definition;
+
+            notMainEntry: ;
+        }
+    }
+
     public void ParsePaintkits()
     {
         Dictionary<string, RarityDefinition> paintkitRarities = new();
@@ -362,7 +493,7 @@ public class EconService
             {
                 foreach (var rarity in keys.Children)
                 {
-                    paintkitRarities[rarity.Name] = Rarities[rarity.Value.EToString()];
+                    paintkitRarities[rarity.Name] = RemapItemRarity(rarity.Value.EToString());
                 }
             }
         }
@@ -381,36 +512,13 @@ public class EconService
                     }
 
                     var tag = paintkit.Value["description_tag"].EToString();
-                    var key = tag.Replace("#", "").Trim();
-                    var localizedNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                    var notFoundLanguages = new List<string>();
-                    foreach (var (languageName, tokens) in Languages)
-                    {
-                        if (tokens.TryGetValue(key, out var value))
-                        {
-                            localizedNames[languageName] = value;
-                        }
-                        else
-                        {
-                            notFoundLanguages.Add(languageName);
-                        }
-                    }
-
-                    if (localizedNames.ContainsKey("english"))
-                    {
-                        foreach (var notfoundLanguage in notFoundLanguages)
-                        {
-                            localizedNames[notfoundLanguage] = localizedNames["english"];
-                        }
-                    }
-
                     var definition = new PaintkitDefinition
                     {
                         Index = int.Parse(paintkit.Name),
                         Name = paintkit.Value["name"].EToString(),
                         UseLegacyModel = paintkit.HasSubKeyWithValue("use_legacy_model", "1"),
                         DescriptionTag = tag,
-                        LocalizedNames = localizedNames,
+                        LocalizedNames = GetLocalizedNames(tag),
                         Rarity = paintkitRarities[paintkit.Value["name"].EToString()]
                     };
                     Paintkits[definition.Name] = definition;
@@ -453,6 +561,60 @@ public class EconService
         }
     }
 
+    private void ParseStickersInternal(Dictionary<string, KVObject> items,
+        string texturePath,
+        string materialPrefix)
+    {
+        var textureDirs = Core.GameFileSystem.FindFileAbsoluteList(Path.Combine(texturePath, "*"), "GAME");
+        foreach (var textureDir in textureDirs)
+        {
+            var collectionName = textureDir.Split('/').Last().Split('\\').Last();
+            var textures =
+                Core.GameFileSystem.FindFileAbsoluteList(
+                    Path.Combine(texturePath, collectionName, "*"), "GAME");
+            foreach (var texture in textures)
+            {
+                var fileName = texture.Split('/').Last().Split('\\').Last();
+                if (!fileName.EndsWith("_png.vtex_c"))
+                {
+                    ParseStickersInternal(items, $"{texturePath}/{collectionName}",
+                        $"{materialPrefix}{collectionName}/");
+                    continue;
+                }
+
+                var itemName = fileName.Replace("_png.vtex_c", "");
+
+                if (itemName.EndsWith("_1355_37"))
+                {
+                    continue;
+                }
+
+                var materialName = $"{materialPrefix}{collectionName}/{itemName}";
+                if (items.TryGetValue(materialName, out var item))
+                {
+                    var localizedNames = GetLocalizedNames(item.Value["item_name"].EToString());
+
+                    var rarityName = item.Value["item_rarity"];
+                    RarityDefinition rarity =
+                        rarityName == null ? Rarities["default"] : Rarities[rarityName.EToString()];
+
+                    var definition = new StickerDefinition
+                    {
+                        Name = item.Value["name"].EToString(),
+                        Index = int.Parse(item.Name),
+                        LocalizedNames = localizedNames,
+                        Rarity = rarity
+                    };
+                    Stickers[definition.Name] = definition;
+                }
+                else
+                {
+                    Logger.LogDebug($"Sticker: {materialName} not found in items");
+                }
+            }
+        }
+    }
+
     public void ParseStickers()
     {
         // temporary
@@ -473,53 +635,49 @@ public class EconService
         }
 
 
-        var textureDirs = Core.GameFileSystem.FindFileAbsoluteList("panorama/images/econ/stickers/*", "GAME");
-        foreach (var textureDir in textureDirs)
+        ParseStickersInternal(items, "panorama/images/econ/stickers", "");
+    }
+
+    public void ParseStickerCollections()
+    {
+        foreach (var keys in Root.Children)
         {
-            var collectionName = textureDir.Split('/').Last().Split('\\').Last();
-            var textures =
-                Core.GameFileSystem.FindFileAbsoluteList(
-                    Path.Combine("panorama/images/econ/stickers/", collectionName, "*"), "GAME");
-            Stickers[collectionName] = new();
-            foreach (var texture in textures)
+            if (keys.Name == "items")
             {
-                var fileName = texture.Split('/').Last().Split('\\').Last();
-                var itemName = fileName.Replace("_png.vtex_c", "");
-
-                if (itemName.EndsWith("_1355_37"))
+                foreach (var stickerCollections in keys.Children)
                 {
-                    continue;
-                }
-
-                var materialName = $"{collectionName}/{itemName}";
-                if (items.TryGetValue(materialName, out var item))
-                {
-                    var localizedNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                    var key = item.Value["item_name"].EToString().Replace("#", "");
-                    foreach (var (languageName, tokens) in Languages)
+                    if (stickerCollections.HasSubKey("tags") &&
+                        stickerCollections.GetSubKey("tags")!.HasSubKey("StickerCapsule"))
                     {
-                        if (tokens.TryGetValue(key, out var value))
+                        var name = stickerCollections.Value["name"].EToString();
+                        var index = int.Parse(stickerCollections.Name);
+                        var localizedNames = GetLocalizedNames(stickerCollections.Value["item_name"].EToString());
+                        ClientLootListDefinition? lootList = null;
+                        var lootListName = name;
+                        var lootListName2 =
+                            stickerCollections.GetSubKey("tags")!.GetSubKey("StickerCapsule")!.Value["tag_value"]!
+                                .EToString();
+                        if (!ClientLootLists.TryGetValue(lootListName, out lootList))
                         {
-                            localizedNames[languageName] = value;
+                            if (!ClientLootLists.TryGetValue(lootListName2, out lootList))
+                            {
+                                Logger.LogWarning($"Sticker collection {name} not found in ClientLootLists");
+                                continue;
+                            }
                         }
+
+                        var stickers = new List<StickerDefinition>();
+                        foreach (var item in lootList.Items)
+                        {
+                            stickers.Add(Stickers[item.Name]);
+                        }
+
+                        var definition = new StickerCollectionDefinition
+                        {
+                            Name = name, Index = index, LocalizedNames = localizedNames, Stickers = stickers,
+                        };
+                        StickerCollections[definition.Name] = definition;
                     }
-
-                    var rarityName = item.Value["item_rarity"];
-                    RarityDefinition rarity =
-                        rarityName == null ? Rarities["default"] : Rarities[rarityName.EToString()];
-
-                    var definition = new StickerDefinition
-                    {
-                        Name = item.Value["name"].EToString(),
-                        Index = int.Parse(item.Name),
-                        LocalizedNames = localizedNames,
-                        Rarity = rarity
-                    };
-                    Stickers[collectionName].Add(definition);
-                }
-                else
-                {
-                    Logger.LogDebug($"Sticker: {materialName} not found in items");
                 }
             }
         }
@@ -537,21 +695,11 @@ public class EconService
                     RarityDefinition rarity =
                         rarityName == null ? Rarities["default"] : Rarities[rarityName.EToString()];
 
-                    var localizedNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                    var key = keychain.Value["loc_name"].EToString().Replace("#", "");
-                    foreach (var (languageName, tokens) in Languages)
-                    {
-                        if (tokens.TryGetValue(key, out var value))
-                        {
-                            localizedNames[languageName] = value;
-                        }
-                    }
-
                     var definition = new KeychainDefinition
                     {
                         Name = keychain.Name,
                         Index = int.Parse(keychain.Name),
-                        LocalizedNames = localizedNames,
+                        LocalizedNames = GetLocalizedNames(keychain.Value["loc_name"].EToString()),
                         Rarity = rarity
                     };
                     Keychains[definition.Name] = definition;

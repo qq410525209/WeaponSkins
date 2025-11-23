@@ -25,4 +25,9 @@ public static class KVExtensions
     {
         return obj.Children.Any(c => c.Name == key && c.Value.EToString() == value);
     }
+
+    public static KVObject? GetSubKey(this KVObject obj, string key)
+    {
+        return obj.Children.FirstOrDefault(c => c.Name == key);
+    }
 }
