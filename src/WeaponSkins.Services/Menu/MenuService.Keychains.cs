@@ -12,7 +12,6 @@ namespace WeaponSkins;
 public partial class MenuService
 {
     private Dictionary<int, KeychainDefinition> KeychainDefinitions { get; set; } = new();
-    private Dictionary<string /* language */, IMenuAPI> _cachedKeychainMenus = new();
     private Dictionary<ulong /* steamid */, WeaponSkinData> _keychainOperatingWeaponSkins = new();
 
     private string? GetKeychainName(KeychainData data,
@@ -72,10 +71,6 @@ public partial class MenuService
     public IMenuAPI BuildKeychainMenu(IPlayer player)
     {
         var language = GetLanguage(player);
-        if (_cachedKeychainMenus.TryGetValue(language, out var cachedMenu))
-        {
-            return cachedMenu;
-        }
 
         var main = Core.MenusAPI.CreateBuilder();
         main.Design.SetMenuTitle(LocalizationService[player].MenuTitleKeychains);
@@ -83,13 +78,12 @@ public partial class MenuService
         {
             var title =
                 $"[{i + 1}] Slot";
-            main.AddOption(new SubmenuMenuOption(
-                title
-                , BuildKeychainMenuBySlot(player, i, language, title)));
+            var slot = i;
+            main.AddOption(new SubmenuMenuOption(title,
+                () => Task.FromResult(BuildKeychainMenuBySlot(player, slot, language, title))));
         }
 
         var menu = main.Build();
-        _cachedKeychainMenus[language] = menu;
         return menu;
     }
 
@@ -104,6 +98,6 @@ public partial class MenuService
 
         _keychainOperatingWeaponSkins[player.SteamID] = dataInHand;
         return new SubmenuMenuOption(LocalizationService[player].MenuTitleKeychains,
-            BuildKeychainMenu(player));
+            () => Task.FromResult(BuildKeychainMenu(player)));
     }
 }

@@ -80,6 +80,6 @@ public partial class MenuService
         }
 
         return new SubmenuMenuOption(LocalizationService[player].MenuTitleGloveProperties,
-            BuildGlovePropertiesMenu(player, dataInHand));
+            () => Task.FromResult(BuildGlovePropertiesMenu(player, dataInHand)));
     }
 }

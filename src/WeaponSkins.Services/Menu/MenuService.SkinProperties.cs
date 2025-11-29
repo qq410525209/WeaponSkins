@@ -205,6 +205,6 @@ public partial class MenuService
         }
 
         return new SubmenuMenuOption(LocalizationService[player].MenuTitleSkinProperties,
-            BuildSkinPropertiesMenu(player, weaponInHand));
+            () => Task.FromResult(BuildSkinPropertiesMenu(player, weaponInHand)));
     }
 }

@@ -9,8 +9,6 @@ namespace WeaponSkins;
 
 public partial class MenuService
 {
-    private Dictionary<string, IMenuAPI> _cachedKnifeSkinMenus = new();
-
     private ValueTask OnKnifeSkinOptionClick(object? sender, MenuOptionClickEventArgs args)
     {
         Core.Scheduler.NextWorldUpdate(() =>
@@ -32,11 +30,6 @@ public partial class MenuService
     public IMenuAPI BuildKnifeSkinMenu(IPlayer player)
     {
         var language = GetLanguage(player);
-        if (_cachedKnifeSkinMenus.TryGetValue(language, out var cachedMenu))
-        {
-            return cachedMenu;
-        }
-
         var main = Core.MenusAPI.CreateBuilder();
         main.Design.SetMenuTitle(LocalizationService[player].MenuTitleKnifes);
 
@@ -48,40 +41,41 @@ public partial class MenuService
                 continue;
             }
 
-            var skinMenu = Core.MenusAPI.CreateBuilder();
-            skinMenu.Design.SetMenuTitleVisible(false);
-            var sorted = paintkits.OrderByDescending(p => p.Rarity.Id).ToList();
-            foreach (var paintkit in sorted)
+            var submenuOption = new SubmenuMenuOption(EconService.Items[knife].LocalizedNames[language], () =>
             {
-                var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(paintkit.LocalizedNames[language],
-                    paintkit.Rarity.Color.HexColor));
-
-                option.Click += (_,
-                    args) =>
+                var skinMenu = Core.MenusAPI.CreateBuilder();
+                skinMenu.Design.SetMenuTitleVisible(false);
+                var sorted = paintkits.OrderByDescending(p => p.Rarity.Id).ToList();
+                foreach (var paintkit in sorted)
                 {
-                    Api.UpdateKnifeSkin(args.Player.SteamID, args.Player.Controller.Team, (knife) =>
+                    var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(paintkit.LocalizedNames[language],
+                        paintkit.Rarity.Color.HexColor));
+
+                    option.Click += (_,
+                        args) =>
                     {
-                        knife.DefinitionIndex = (ushort)item.Index;
-                        knife.Paintkit = paintkit.Index;
-                    }, true);
+                        Api.UpdateKnifeSkin(args.Player.SteamID, args.Player.Controller.Team, (knife) =>
+                        {
+                            knife.DefinitionIndex = (ushort)item.Index;
+                            knife.Paintkit = paintkit.Index;
+                        }, true);
 
-                    return ValueTask.CompletedTask;
-                };
+                        return ValueTask.CompletedTask;
+                    };
 
-                option.Tag = paintkit.Index;
+                    option.Tag = paintkit.Index;
 
-                skinMenu.AddOption(option);
-            }
+                    skinMenu.AddOption(option);
+                }
+                return Task.FromResult(skinMenu.Build());
+            });
 
-            var submenuOption =
-                new SubmenuMenuOption(EconService.Items[knife].LocalizedNames[language], skinMenu.Build());
             submenuOption.Tag = (ushort)item.Index;
             submenuOption.Click += OnKnifeSkinOptionClick;
             main.AddOption(submenuOption);
         }
 
         var menu = main.Build();
-        _cachedKnifeSkinMenus[language] = menu;
         return menu;
     }
 
@@ -103,7 +97,9 @@ public partial class MenuService
 
     public IMenuOption GetKnifeSkinMenuSubmenuOption(IPlayer player)
     {
-        var skinOption = new SubmenuMenuOption(LocalizationService[player].MenuTitleKnifes, BuildKnifeSkinMenu(player));
+        var skinOption = new SubmenuMenuOption(LocalizationService[player].MenuTitleKnifes, 
+            () => Task.FromResult(BuildKnifeSkinMenu(player)));
+        
         skinOption.Click += OnKnifeMenuSkinOptionClick;
 
         return skinOption;

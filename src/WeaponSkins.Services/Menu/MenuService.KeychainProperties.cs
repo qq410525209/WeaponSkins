@@ -139,6 +139,6 @@ public partial class MenuService
         var keychainName = GetKeychainName(keychain, GetLanguage(player));
         if (keychainName == null) return null;
         return new SubmenuMenuOption(LocalizationService[player].MenuSkinPropertiesSetKeychain(slot, keychainName),
-            BuildKeychainPropertiesMenu(player, data, slot));
+            () => Task.FromResult(BuildKeychainPropertiesMenu(player, data, slot)));
     }
 }

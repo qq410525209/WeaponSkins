@@ -1,4 +1,8 @@
+using SwiftlyS2.Shared;
+using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.Players;
+using SwiftlyS2.Shared.SchemaDefinitions;
+using SwiftlyS2.Shared.Services;
 
 namespace WeaponSkins.Shared;
 
@@ -96,7 +100,36 @@ public record WeaponSkinData
         {
             case 0: Keychain0 = data; break;
         }
+
+        ISwiftlyCore core;
     }
 
     public bool HasKeychain(int slot) => GetKeychain(slot) != null;
+}
+
+public static class TraceExtensions
+{
+    public static CGameTrace GetGameTraceByEyePosition(
+        this ITraceManager self,
+        CCSPlayerController player,
+        Vector destination,
+        ulong mask
+    )
+    {
+        if (!player.PlayerPawn.IsValid || player.PlayerPawn.Value?.AbsOrigin is null)
+            return new CGameTrace();
+
+        var pawn = player.PlayerPawn.Value;
+        var start = pawn.AbsOrigin.Value;
+        start.Z += 64f;
+
+        var trace = new CGameTrace();
+        var ray = new Ray_t();
+
+        var filter = new CTraceFilter();
+
+        self.TraceShape(start, destination, ray, filter, ref trace);
+
+        return trace;
+    }
 }

@@ -7,8 +7,6 @@ namespace WeaponSkins;
 
 public partial class MenuService
 {
-    private Dictionary<string, IMenuAPI> _cachedGloveSkinMenus = new();
-
     private ValueTask OnGloveSkinOptionClick(object? sender, MenuOptionClickEventArgs args)
     {
         Core.Scheduler.NextWorldUpdate(() =>
@@ -31,11 +29,6 @@ public partial class MenuService
     public IMenuAPI BuildGloveSkinMenu(IPlayer player)
     {
         var language = GetLanguage(player);
-        if (_cachedGloveSkinMenus.TryGetValue(language, out var cachedMenu))
-        {
-            return cachedMenu;
-        }
-
         var main = Core.MenusAPI.CreateBuilder();
         main.Design.SetMenuTitle(LocalizationService[player].MenuTitleGloves);
 
@@ -47,41 +40,42 @@ public partial class MenuService
                 continue;
             }
 
-            var skinMenu = Core.MenusAPI.CreateBuilder();
-            skinMenu.Design.SetMenuTitleVisible(false);
-            var sorted = paintkits.OrderByDescending(p => p.Rarity.Id).ToList();
-            foreach (var paintkit in sorted)
+            var submenuOption = new SubmenuMenuOption(EconService.Items[glove].LocalizedNames[language], () =>
             {
-                var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(paintkit.LocalizedNames[language],
-                    paintkit.Rarity.Color.HexColor));
-
-                option.Click += (_,
-                    args) =>
+                var skinMenu = Core.MenusAPI.CreateBuilder();
+                skinMenu.Design.SetMenuTitleVisible(false);
+                var sorted = paintkits.OrderByDescending(p => p.Rarity.Id).ToList();
+                foreach (var paintkit in sorted)
                 {
-                    Api.UpdateGloveSkin(args.Player.SteamID, args.Player.Controller.Team, skin =>
+                    var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(paintkit.LocalizedNames[language],
+                        paintkit.Rarity.Color.HexColor));
+
+                    option.Click += (_,
+                        args) =>
                     {
-                        skin.DefinitionIndex = (ushort)item.Index;
-                        skin.Paintkit = paintkit.Index;
-                    }, true);
+                        Api.UpdateGloveSkin(args.Player.SteamID, args.Player.Controller.Team, skin =>
+                        {
+                            skin.DefinitionIndex = (ushort)item.Index;
+                            skin.Paintkit = paintkit.Index;
+                        }, true);
 
-                    return ValueTask.CompletedTask;
-                };
+                        return ValueTask.CompletedTask;
+                    };
 
-                option.Tag = paintkit.Index;
+                    option.Tag = paintkit.Index;
 
 
-                skinMenu.AddOption(option);
-            }
+                    skinMenu.AddOption(option);
+                }
+                return Task.FromResult(skinMenu.Build());
+            });
 
-            var submenuOption =
-                new SubmenuMenuOption(EconService.Items[glove].LocalizedNames[language], skinMenu.Build());
             submenuOption.Tag = (ushort)item.Index;
             submenuOption.Click += OnGloveSkinOptionClick;
             main.AddOption(submenuOption);
         }
 
         var menu = main.Build();
-        _cachedGloveSkinMenus[language] = menu;
         return menu;
     }
 
@@ -107,7 +101,9 @@ public partial class MenuService
 
     public IMenuOption GetGloveSkinMenuSubmenuOption(IPlayer player)
     {
-        var skinOption = new SubmenuMenuOption(LocalizationService[player].MenuTitleGloves, BuildGloveSkinMenu(player));
+        var skinOption = new SubmenuMenuOption(LocalizationService[player].MenuTitleGloves,
+            () => Task.FromResult(BuildGloveSkinMenu(player)));
+
         if (TryGetGloveDataInHand(player, out var gloveInHand))
         {
             skinOption.Click += OnGloveMenuSkinOptionClick;

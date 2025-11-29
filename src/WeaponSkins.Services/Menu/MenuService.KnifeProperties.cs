@@ -162,6 +162,6 @@ public partial class MenuService
         }
 
         return new SubmenuMenuOption(LocalizationService[player].MenuTitleKnifeProperties,
-            BuildKnifePropertiesMenu(player, dataInHand));
+            () => Task.FromResult(BuildKnifePropertiesMenu(player, dataInHand)));
     }
 }

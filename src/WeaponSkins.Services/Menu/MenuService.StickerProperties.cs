@@ -118,6 +118,6 @@ public partial class MenuService
         var stickerName = GetStickerName(sticker, GetLanguage(player));
         if (stickerName == null) return null;
         return new SubmenuMenuOption(LocalizationService[player].MenuSkinPropertiesSetSticker(slot, stickerName),
-            BuildStickerPropertiesMenu(player, data, slot));
+            () => Task.FromResult(BuildStickerPropertiesMenu(player, data, slot)));
     }
 }
