@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://pan.samyyc.dev/s/VYmMXE" />
-  <h2><strong>WeaponSkins</strong></h2>
-  <h3>No description.</h3>
+  <h2><strong>WeaponSkins (WIP)</strong></h2>
+  <h3>This plugin is under active development and will be released soon.</h3>
 </div>
 
 <p align="center">
