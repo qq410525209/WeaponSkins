@@ -37,7 +37,7 @@ public partial class MenuService
             }
         }
 
-        if (definition == null) return null;    
+        if (definition == null) return null;
 
         return definition.LocalizedNames[language];
     }
@@ -50,7 +50,24 @@ public partial class MenuService
         var main = Core.MenusAPI.CreateBuilder();
 
         main.Design.SetMenuTitle(title);
+        var resetOption = new ButtonMenuOption(LocalizationService[player].MenuReset);
+        resetOption.Click += (_,
+            args) =>
+        {
+            if (!_stickerOperatingWeaponSkins.TryGetValue(args.Player.SteamID, out var dataInHand))
+            {
+                return ValueTask.CompletedTask;
+            }
 
+            Api.UpdateWeaponSkin(args.Player.SteamID, args.Player.Controller.Team, dataInHand.DefinitionIndex,
+                skin =>
+                {
+                    skin.SetSticker(slot, null);
+                }, true);
+            return ValueTask.CompletedTask;
+        };
+
+        main.AddOption(resetOption);
         foreach (var (index, stickerCollection) in EconService.StickerCollections)
         {
             main.AddOption(new SubmenuMenuOption(stickerCollection.LocalizedNames[language], () =>
@@ -61,7 +78,8 @@ public partial class MenuService
                 foreach (var sticker in stickerCollection.Stickers)
                 {
                     if (sticker.Index == 0) continue;
-                    var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(sticker.LocalizedNames[language],
+                    var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(
+                        sticker.LocalizedNames[language],
                         sticker.Rarity.Color.HexColor));
                     option.Click += (_,
                         args) =>
@@ -71,24 +89,17 @@ public partial class MenuService
                             return ValueTask.CompletedTask;
                         }
 
-                        Api.UpdateWeaponSkin(args.Player.SteamID, args.Player.Controller.Team, dataInHand.DefinitionIndex,
+                        Api.UpdateWeaponSkin(args.Player.SteamID, args.Player.Controller.Team,
+                            dataInHand.DefinitionIndex,
                             skin =>
                             {
-                                var stickerData = new StickerData { Id = sticker.Index, };
-                                switch (slot)
-                                {
-                                    case 0: skin.Sticker0 = stickerData; break;
-                                    case 1: skin.Sticker1 = stickerData; break;
-                                    case 2: skin.Sticker2 = stickerData; break;
-                                    case 3: skin.Sticker3 = stickerData; break;
-                                    case 4: skin.Sticker4 = stickerData; break;
-                                    case 5: skin.Sticker5 = stickerData; break;
-                                }
+                                skin.SetSticker(slot, new StickerData { Id = sticker.Index, });
                             }, true);
                         return ValueTask.CompletedTask;
                     };
                     stickerMenu.AddOption(option);
                 }
+
                 return Task.FromResult(stickerMenu.Build());
             }));
         }
@@ -102,12 +113,14 @@ public partial class MenuService
 
         var main = Core.MenusAPI.CreateBuilder();
         main.Design.SetMenuTitle(LocalizationService[player].MenuTitleStickers);
+
         for (int i = 0; i < 6; i++)
         {
             var title =
                 $"[{i + 1}] Slot";
             var slot = i;
-            main.AddOption(new SubmenuMenuOption(title, () => Task.FromResult(BuildStickerMenuBySlot(player, slot, language, title))));
+            main.AddOption(new SubmenuMenuOption(title,
+                () => Task.FromResult(BuildStickerMenuBySlot(player, slot, language, title))));
         }
 
         var menu = main.Build();
@@ -125,6 +138,7 @@ public partial class MenuService
         }
 
         _stickerOperatingWeaponSkins[player.SteamID] = dataInHand;
-        return new SubmenuMenuOption(LocalizationService[player].MenuTitleStickers, () => Task.FromResult(BuildStickerMenu(player)));
+        return new SubmenuMenuOption(LocalizationService[player].MenuTitleStickers,
+            () => Task.FromResult(BuildStickerMenu(player)));
     }
 }

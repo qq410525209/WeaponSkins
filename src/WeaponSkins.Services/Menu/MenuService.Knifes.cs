@@ -46,6 +46,14 @@ public partial class MenuService
                 var skinMenu = Core.MenusAPI.CreateBuilder();
                 skinMenu.Design.SetMenuTitleVisible(false);
                 var sorted = paintkits.OrderByDescending(p => p.Rarity.Id).ToList();
+                var resetOption = new ButtonMenuOption(LocalizationService[player].MenuReset);
+                resetOption.Click += (_,
+                    args) =>
+                {
+                    Api.ResetKnifeSkin(args.Player.SteamID, args.Player.Controller.Team, true);
+                    return ValueTask.CompletedTask;
+                };
+                skinMenu.AddOption(resetOption);
                 foreach (var paintkit in sorted)
                 {
                     var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(paintkit.LocalizedNames[language],

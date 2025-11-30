@@ -151,4 +151,40 @@ public class WeaponSkinAPI : IWeaponSkinAPI
 
         return false;
     }
+
+    public void ResetWeaponSkin(ulong steamid,
+        Team team,
+        ushort definitionIndex,
+        bool permanent = false
+    )
+    {
+        InventoryUpdateService.ResetWeaponSkin(steamid, team, definitionIndex);
+        if (permanent)
+        {
+            var _ = Task.Run(async () => await DatabaseService.RemoveSkin(steamid, team, definitionIndex));
+        }
+    }
+
+    public void ResetKnifeSkin(ulong steamid,
+        Team team,
+        bool permanent = false
+    )
+    {
+        InventoryUpdateService.ResetKnifeSkin(steamid, team);
+        if (permanent)
+        {
+            var _ = Task.Run(async () => await DatabaseService.RemoveKnife(steamid, team));
+        }
+    }
+
+    public void ResetGloveSkin(ulong steamid,
+        Team team,
+        bool permanent = false)
+    {
+        InventoryUpdateService.ResetGloveSkin(steamid, team);
+        if (permanent)
+        {
+            var _ = Task.Run(async () => await DatabaseService.RemoveGlove(steamid, team));
+        }
+    }
 }

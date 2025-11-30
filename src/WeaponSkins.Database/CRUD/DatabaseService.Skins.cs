@@ -62,4 +62,21 @@ public partial class DatabaseService
     {
         return GetAllSkinsAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
+
+    public async Task RemoveSkin(ulong steamId,
+        Team team,
+        ushort definitionIndex)
+    {
+        await fsql.Delete<SkinModel>()
+            .Where(skin => skin.SteamID == steamId.ToString() && skin.Team == (short)team &&
+                           skin.DefinitionIndex == definitionIndex)
+            .ExecuteAffrowsAsync();
+    }
+
+    public async Task RemoveSkins(ulong steamId)
+    {
+        await fsql.Delete<SkinModel>()
+            .Where(skin => skin.SteamID == steamId.ToString())
+            .ExecuteAffrowsAsync();
+    }
 }

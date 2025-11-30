@@ -77,4 +77,12 @@ public class WeaponDataService
     {
         _playerSkins.TryRemove(steamId, out _);
     }
+
+    public bool TryRemoveSkin(ulong steamId,
+        Team team,
+        ushort definitionIndex)
+    {
+        return _playerSkins.TryGetValue(steamId, out var playerInventory) &&
+               playerInventory.TryGetValue(team, out var teamSkins) && teamSkins.TryRemove(definitionIndex, out _);
+    }
 }

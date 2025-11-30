@@ -68,7 +68,7 @@ public record WeaponSkinData
     }
 
     public void SetSticker(int slot,
-        StickerData data)
+        StickerData? data)
     {
         switch (slot)
         {
@@ -94,7 +94,7 @@ public record WeaponSkinData
     }
 
     public void SetKeychain(int slot,
-        KeychainData data)
+        KeychainData? data)
     {
         switch (slot)
         {
@@ -105,31 +105,4 @@ public record WeaponSkinData
     }
 
     public bool HasKeychain(int slot) => GetKeychain(slot) != null;
-}
-
-public static class TraceExtensions
-{
-    public static CGameTrace GetGameTraceByEyePosition(
-        this ITraceManager self,
-        CCSPlayerController player,
-        Vector destination,
-        ulong mask
-    )
-    {
-        if (!player.PlayerPawn.IsValid || player.PlayerPawn.Value?.AbsOrigin is null)
-            return new CGameTrace();
-
-        var pawn = player.PlayerPawn.Value;
-        var start = pawn.AbsOrigin.Value;
-        start.Z += 64f;
-
-        var trace = new CGameTrace();
-        var ray = new Ray_t();
-
-        var filter = new CTraceFilter();
-
-        self.TraceShape(start, destination, ray, filter, ref trace);
-
-        return trace;
-    }
 }

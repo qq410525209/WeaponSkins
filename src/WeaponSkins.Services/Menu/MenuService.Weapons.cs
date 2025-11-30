@@ -7,7 +7,8 @@ namespace WeaponSkins;
 
 public partial class MenuService
 {
-    private ValueTask OnWeaponSkinOptionClick(object? sender, MenuOptionClickEventArgs args)
+    private ValueTask OnWeaponSkinOptionClick(object? sender,
+        MenuOptionClickEventArgs args)
     {
         Core.Scheduler.NextWorldUpdate(() =>
         {
@@ -17,7 +18,7 @@ public partial class MenuService
                 menu.MoveToOption(args.Player,
                     menu.Options.FirstOrDefault(o =>
                         o.Tag is int tag &&
-                        tag == weaponInHand.Paintkit));
+                        tag == weaponInHand.Paintkit)!);
             }
         });
         return ValueTask.CompletedTask;
@@ -43,9 +44,20 @@ public partial class MenuService
                 var skinMenu = Core.MenusAPI.CreateBuilder();
                 skinMenu.Design.SetMenuTitleVisible(false);
                 var sorted = paintkits.OrderByDescending(p => p.Rarity.Id).ToList();
+                var resetOption = new ButtonMenuOption(LocalizationService[player].MenuReset);
+                
+                resetOption.Click += (_,
+                    args) =>
+                {
+                    Api.ResetWeaponSkin(args.Player.SteamID, args.Player.Controller.Team, (ushort)item.Index, true);
+                    return ValueTask.CompletedTask;
+                };
+
+                skinMenu.AddOption(resetOption);
                 foreach (var paintkit in sorted)
                 {
-                    var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(paintkit.LocalizedNames[language],
+                    var option = new ButtonMenuOption(HtmlGradient.GenerateGradientText(
+                        paintkit.LocalizedNames[language],
                         paintkit.Rarity.Color.HexColor));
 
                     option.Click += (_,
@@ -64,6 +76,7 @@ public partial class MenuService
 
                     skinMenu.AddOption(option);
                 }
+
                 return Task.FromResult(skinMenu.Build());
             });
 
@@ -76,7 +89,8 @@ public partial class MenuService
         return menu;
     }
 
-    private ValueTask OnWeaponMenuSkinOptionClick(object? sender, MenuOptionClickEventArgs args)
+    private ValueTask OnWeaponMenuSkinOptionClick(object? sender,
+        MenuOptionClickEventArgs args)
     {
         Core.Scheduler.NextWorldUpdate(() =>
         {
@@ -97,7 +111,7 @@ public partial class MenuService
 
     public IMenuOption GetWeaponSkinMenuSubmenuOption(IPlayer player)
     {
-        var skinOption = new SubmenuMenuOption(LocalizationService[player].MenuTitleSkins, 
+        var skinOption = new SubmenuMenuOption(LocalizationService[player].MenuTitleSkins,
             () => Task.FromResult(BuildWeaponSkinMenu(player)));
 
         skinOption.Click += OnWeaponMenuSkinOptionClick;

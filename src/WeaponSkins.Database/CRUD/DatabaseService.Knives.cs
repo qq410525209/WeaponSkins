@@ -132,4 +132,19 @@ public partial class DatabaseService
     {
         return GetAllKnifesAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
-}   
+
+    public async Task RemoveKnife(ulong steamId,
+        Team team)
+    {
+        await fsql.Delete<KnifeModel>()
+            .Where(knife => knife.SteamID == steamId.ToString() && knife.Team == (short)team)
+            .ExecuteAffrowsAsync();
+    }
+
+    public async Task RemoveKnifes(ulong steamId)
+    {
+        await fsql.Delete<KnifeModel>()
+            .Where(knife => knife.SteamID == steamId.ToString())
+            .ExecuteAffrowsAsync();
+    }
+}

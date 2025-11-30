@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Events;
+using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Shared.SchemaDefinitions;
 
 using WeaponSkins.Shared;
@@ -119,5 +120,33 @@ public class InventoryService
 
         SubscribedInventories[inventory.SteamID] = inventory;
         return true;
+    }
+
+    public void ResetWeaponSkin(ulong steamid,
+        Team team,
+        ushort definitionIndex)
+    {
+        if (TryGet(steamid, out var inventory))
+        {
+            inventory.ResetWeaponSkin(team, definitionIndex);
+        }   
+    }
+
+    public void ResetKnifeSkin(ulong steamid,
+        Team team)
+    {
+        if (TryGet(steamid, out var inventory))
+        {
+            inventory.ResetKnifeSkin(team);
+        }
+    }
+    
+    public void ResetGloveSkin(ulong steamid,
+        Team team)
+    {
+        if (TryGet(steamid, out var inventory))
+        {
+            inventory.ResetGloveSkin(team);
+        }
     }
 }

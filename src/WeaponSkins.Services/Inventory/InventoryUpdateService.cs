@@ -108,10 +108,10 @@ public class InventoryUpdateService
                             if (weapon.Value!.AttributeManager.Item.ItemDefinitionIndex == skin.DefinitionIndex &&
                                 player.Controller.Team == skin.Team)
                             {
-                                    Core.Scheduler.NextWorldUpdate(() =>
-                                    {
-                                        player.RegiveWeapon(weapon.Value, skin.DefinitionIndex);
-                                    });
+                                Core.Scheduler.NextWorldUpdate(() =>
+                                {
+                                    player.RegiveWeapon(weapon.Value, skin.DefinitionIndex);
+                                });
                             }
                         }
                     }
@@ -145,7 +145,7 @@ public class InventoryUpdateService
                         {
                             Core.Scheduler.NextWorldUpdate(() =>
                             {
-                                player.RegiveKnife(knife.DefinitionIndex);
+                                player.RegiveKnife();
                             });
                         }
                     }
@@ -177,38 +177,71 @@ public class InventoryUpdateService
                     {
                         if (player.Controller.Team == glove.Team)
                         {
-                            Core.Scheduler.NextWorldUpdate(() =>
-                            {
-                                Console.WriteLine("UpdateGloveSkins!!: Updating glove: {0}", glove.ToString());
-                                var model = player.PlayerPawn!.CBodyComponent!.SceneNode.GetSkeletonInstance()
-                                    .ModelState
-                                    .ModelName;
-                                player.PlayerPawn.SetModel("characters/models/tm_jumpsuit/tm_jumpsuit_varianta.vmdl");
-                                player.PlayerPawn.SetModel(model);
-                                var econGloves = player.PlayerPawn.EconGloves;
-                                // player.PlayerPawn.EconGloves.Initialized = false;
-                                // player.PlayerPawn.EconGloves.InitializedUpdated();
-                                econGloves.Initialized = true;
-
-                                Core.Scheduler.NextWorldUpdate(() =>
-                                {
-                                    var itemInLoadout = InventoryService.Get(player.SteamID).GetItemInLoadout(glove.Team, loadout_slot_t.LOADOUT_SLOT_CLOTHING_HANDS)!;
-                                    econGloves.ItemDefinitionIndex = itemInLoadout.ItemDefinitionIndex;
-                                    econGloves.AccountID = itemInLoadout.AccountID;
-                                    econGloves.ItemID = itemInLoadout.ItemID;
-                                    econGloves.ItemIDHigh = itemInLoadout.ItemIDHigh;
-                                    econGloves.ItemIDLow = itemInLoadout.ItemIDLow;
-                                    econGloves.InventoryPosition = itemInLoadout.InventoryPosition;
-                                    econGloves.EntityLevel = itemInLoadout.EntityLevel;
-                                    econGloves.EntityQuality = itemInLoadout.EntityQuality;
-                                    NativeService.UpdateItemView.CallOriginal(
-                                        econGloves.Address, 0);
-                                    player.PlayerPawn.AcceptInput("SetBodygroup", "default_gloves,1");
-                                });
-                            });
+                            player.RegiveGlove(InventoryService.Get(steamID));
                         }
                     }
                 }
+            }
+        }
+    }
+
+    public void ResetWeaponSkin(ulong steamid,
+        Team team,
+        ushort definitionIndex)
+    {
+        if (DataService.WeaponDataService.TryRemoveSkin(steamid, team, definitionIndex))
+        {
+            InventoryService.ResetWeaponSkin(steamid, team, definitionIndex);
+            if (PlayerService.TryGetPlayer(steamid, out var player))
+            {
+                Core.Scheduler.NextWorldUpdate(() =>
+                {
+                    if (player.IsAlive())
+                    {
+                        player.RegiveWeapon(
+                            player.PlayerPawn!.WeaponServices!.MyWeapons.FirstOrDefault(w =>
+                                w.Value!.AttributeManager.Item.ItemDefinitionIndex == definitionIndex &&
+                                player.Controller.Team == team).Value!, definitionIndex);
+                    }
+                });
+            }
+        }
+    }
+
+    public void ResetKnifeSkin(ulong steamid,
+        Team team)
+    {
+        if (DataService.KnifeDataService.TryRemoveKnife(steamid, team))
+        {
+            InventoryService.ResetKnifeSkin(steamid, team);
+            if (PlayerService.TryGetPlayer(steamid, out var player))
+            {
+                Core.Scheduler.NextWorldUpdate(() =>
+                {
+                    if (player.IsAlive())
+                    {
+                        player.RegiveKnife();
+                    }
+                });
+            }
+        }
+    }
+
+    public void ResetGloveSkin(ulong steamid,
+        Team team)
+    {
+        if (DataService.GloveDataService.TryRemoveGlove(steamid, team))
+        {
+            InventoryService.ResetGloveSkin(steamid, team);
+            if (PlayerService.TryGetPlayer(steamid, out var player))
+            {
+                Core.Scheduler.NextWorldUpdate(() =>
+                {
+                    if (player.IsAlive())
+                    {
+                        player.RegiveGlove(InventoryService.Get(steamid));
+                    }
+                });
             }
         }
     }

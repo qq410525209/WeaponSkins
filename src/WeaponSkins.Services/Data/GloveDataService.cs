@@ -47,4 +47,10 @@ public class GloveDataService
     {
         _playerGloves.TryRemove(steamId, out _);
     }
+
+    public bool TryRemoveGlove(ulong steamId,
+        Team team)
+    {
+        return _playerGloves.TryGetValue(steamId, out var playerGloves) && playerGloves.TryRemove(team, out _);
+    }
 }

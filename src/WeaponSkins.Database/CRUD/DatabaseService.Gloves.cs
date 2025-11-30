@@ -58,4 +58,19 @@ public partial class DatabaseService
     {
         return GetAllGlovesAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
+
+    public async Task RemoveGlove(ulong steamId,
+        Team team)
+    {
+        await fsql.Delete<GloveModel>()
+            .Where(glove => glove.SteamID == steamId.ToString() && glove.Team == (short)team)
+            .ExecuteAffrowsAsync();
+    }
+
+    public async Task RemoveGloves(ulong steamId)
+    {
+        await fsql.Delete<GloveModel>()
+            .Where(glove => glove.SteamID == steamId.ToString())
+            .ExecuteAffrowsAsync();
+    }
 }       

@@ -163,7 +163,6 @@ public class NativeService
                     {
                         var ret = next()(pInventory, pSOID, pSOCache);
                         var inventory = new CCSPlayerInventory(pInventory);
-                        var a = inventory.Loadouts[Team.CT, loadout_slot_t.LOADOUT_SLOT_C4];
                         OnSOCacheSubscribed?.Invoke(inventory, *pSOID);
                         return ret;
                     }

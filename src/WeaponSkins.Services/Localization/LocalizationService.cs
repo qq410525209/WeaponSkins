@@ -64,6 +64,7 @@ public class PlayerLocalizationService
     public string MenuKeychainPropertiesOffsetY => Localizer["menu.keychainproperties.offsety"];
     public string MenuKeychainPropertiesOffsetZ => Localizer["menu.keychainproperties.offsetz"];
     public string MenuKeychainPropertiesResetOffset => Localizer["menu.keychainproperties.resetoffset"];
+    public string MenuReset => Localizer["menu.reset"];
 
     public string MenuSkinPropertiesStattrakCount(int stattrak) =>
         Localizer["menu.skinproperties.stattrakcount", stattrak];

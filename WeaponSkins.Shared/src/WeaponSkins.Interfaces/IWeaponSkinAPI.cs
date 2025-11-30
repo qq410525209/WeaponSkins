@@ -6,11 +6,14 @@ namespace WeaponSkins.Shared;
 
 public interface IWeaponSkinAPI
 {
-    void SetWeaponSkins(IEnumerable<WeaponSkinData> skins, bool permanent = false);
+    void SetWeaponSkins(IEnumerable<WeaponSkinData> skins,
+        bool permanent = false);
 
-    void SetKnifeSkins(IEnumerable<KnifeSkinData> knives, bool permanent = false);
+    void SetKnifeSkins(IEnumerable<KnifeSkinData> knives,
+        bool permanent = false);
 
-    void SetGloveSkins(IEnumerable<GloveData> gloves, bool permanent = false);
+    void SetGloveSkins(IEnumerable<GloveData> gloves,
+        bool permanent = false);
 
     void UpdateWeaponSkin(ulong steamid,
         Team team,
@@ -27,7 +30,7 @@ public interface IWeaponSkinAPI
         Team team,
         Action<GloveData> action,
         bool permanent = false);
-    
+
     bool TryGetWeaponSkin(ulong steamid,
         Team team,
         ushort definitionIndex,
@@ -40,4 +43,17 @@ public interface IWeaponSkinAPI
     bool TryGetGloveSkin(ulong steamid,
         Team team,
         [MaybeNullWhen(false)] out GloveData glove);
+
+    void ResetWeaponSkin(ulong steamid,
+        Team team,
+        ushort definitionIndex,
+        bool permanent = false);
+
+    void ResetKnifeSkin(ulong steamid,
+        Team team,
+        bool permanent = false);
+
+    void ResetGloveSkin(ulong steamid,
+        Team team,
+        bool permanent = false);
 }

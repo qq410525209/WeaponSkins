@@ -37,6 +37,23 @@ public partial class MenuService
 
         main.Design.SetMenuTitle(title);
 
+        var resetOption = new ButtonMenuOption(LocalizationService[player].MenuReset);
+        resetOption.Click += (_,
+            args) =>
+        {
+            if (!_keychainOperatingWeaponSkins.TryGetValue(args.Player.SteamID, out var dataInHand))
+            {
+                return ValueTask.CompletedTask;
+            }
+
+            Api.UpdateWeaponSkin(args.Player.SteamID, args.Player.Controller.Team, dataInHand.DefinitionIndex, skin =>
+            {
+                skin.SetKeychain(slot, null);
+            }, true);
+            return ValueTask.CompletedTask;
+        };
+        main.AddOption(resetOption);
+
         var sorted = EconService.Keychains.OrderByDescending(k => k.Value.Rarity.Id).ToList();
         foreach (var (index, keychain) in sorted)
         {

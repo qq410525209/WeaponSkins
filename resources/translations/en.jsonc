@@ -31,5 +31,6 @@
   "menu.keychainproperties.offsetx": "Offset X",
   "menu.keychainproperties.offsety": "Offset Y",
   "menu.keychainproperties.offsetz": "Offset Z",
-  "menu.keychainproperties.resetoffset": "Reset Offset"
+  "menu.keychainproperties.resetoffset": "Reset Offset",
+  "menu.reset": "Reset"
 }

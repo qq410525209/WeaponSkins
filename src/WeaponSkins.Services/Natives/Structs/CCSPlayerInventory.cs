@@ -21,10 +21,12 @@ public class CCSPlayerInventory : INativeHandle
     public ulong SteamID => SOCache.Owner.SteamID;
 
     private NativeService NativeService => StaticNativeService.Service;
+    private CCSPlayerInventory_Loadouts _defaultLoadouts { get; init; }
 
     public CCSPlayerInventory(nint address)
     {
         Address = address;
+        _defaultLoadouts = Loadouts;
     }
 
     public CGCClientSharedObjectCache SOCache =>
@@ -189,51 +191,34 @@ public class CCSPlayerInventory : INativeHandle
         StickerFixService.FixSticker(skinData);
         Core.Scheduler.NextWorldUpdate(() =>
         {
-            Console.WriteLine("UpdateWeaponSkin: {0}", skinData.ToString());
-            Console.WriteLine("UpdateWeaponSkin: Creating item");
             var item = NativeService.CreateCEconItemInstance();
-            // Already has a skin
-            Console.WriteLine("UpdateWeaponSkin: Trying to get item ID");
             if (TryGetItemID(skinData.Team, skinData.DefinitionIndex, out var itemID) &&
                 TryGetEconItemByItemID(itemID, out var oldItem))
             {
-                Console.WriteLine("UpdateWeaponSkin: Item found");
-                item.AccountID = oldItem.AccountID;
-                item.ItemID = oldItem.ItemID;
-                item.InventoryPosition = oldItem.InventoryPosition;
                 item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
                 item.ItemID = GetNewItemID();
-                Console.WriteLine("UpdateWeaponSkin: New item ID set to {0}", item.ItemID);
                 item.InventoryPosition = GetNewInventoryPosition();
-                Console.WriteLine("UpdateWeaponSkin: New inventory position set to {0}", item.InventoryPosition);
-                Console.WriteLine("UpdateWeaponSkin: Item copied");
-                SOCache.RemoveObject(oldItem);
-                Console.WriteLine("UpdateWeaponSkin: Removing item");
+                if (itemID != GetDefaultWeaponSkinItemID(skinData.Team, skinData.DefinitionIndex))
+                {
+                    SOCache.RemoveObject(oldItem);
+                }
+
                 SODestroyed(SteamID, oldItem);
-                Console.WriteLine("UpdateWeaponSkin: Item destroyed");
+
                 UpdateLoadoutItem(skinData.Team, skinData.DefinitionIndex, item.ItemID);
             }
             else
             {
-                Console.WriteLine("UpdateWeaponSkin: No item ID found");
                 item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
-                // not sure if it will work
-                Console.WriteLine("UpdateWeaponSkin: Getting new item ID");
                 item.ItemID = GetNewItemID();
                 item.InventoryPosition = GetNewInventoryPosition();
-                Console.WriteLine("UpdateWeaponSkin: New item ID set");
                 UpdateLoadoutItem(skinData.Team, skinData.DefinitionIndex, item.ItemID);
             }
 
-            Console.WriteLine("UpdateWeaponSkin: Applying skin data");
-
             item.Apply(skinData);
-            Console.WriteLine("UpdateWeaponSkin: Adding item to SOCache");
             SOCache.AddObject(item);
-            Console.WriteLine("UpdateWeaponSkin: Item added to SOCache");
             SOCreated(SteamID, item);
             SOUpdated(SteamID, item);
-            Console.WriteLine("UpdateWeaponSkin: Item updated");
         });
     }
 
@@ -241,21 +226,20 @@ public class CCSPlayerInventory : INativeHandle
     {
         Core.Scheduler.NextWorldUpdate(() =>
         {
-            Console.WriteLine("UpdateKnifeSkin: {0}", skinData.ToString());
-            // somehow the MELEE loadout keeps the old itemid
-            // by old i means IT CAN BE A ITEM THAT I SOLD TWO WEEKS AGO
-
             var item = NativeService.CreateCEconItemInstance();
             ref var loadout = ref Loadouts[skinData.Team, loadout_slot_t.LOADOUT_SLOT_MELEE];
 
             if (IsValidItemID(loadout.ItemId) && TryGetEconItemByItemID(loadout.ItemId, out var oldItem))
             {
-                SOCache.RemoveObject(oldItem);
+                if (loadout.ItemId != GetDefaultKnifeSkinItemID(skinData.Team))
+                {
+                    SOCache.RemoveObject(oldItem);
+                }
+
                 SODestroyed(SteamID, oldItem);
             }
 
             item.AccountID = new CSteamID(SteamID).GetAccountID().m_AccountID;
-            // not sure if it will work
             item.ItemID = GetNewItemID();
             item.InventoryPosition = GetNewInventoryPosition();
             loadout.ItemId = item.ItemID;
@@ -271,12 +255,16 @@ public class CCSPlayerInventory : INativeHandle
     {
         Core.Scheduler.NextWorldUpdate(() =>
         {
-            Console.WriteLine("UpdateGloveSkin: {0}", skinData.ToString());
             var item = NativeService.CreateCEconItemInstance();
             ref var loadout = ref Loadouts[skinData.Team, loadout_slot_t.LOADOUT_SLOT_CLOTHING_HANDS];
+
             if (IsValidItemID(loadout.ItemId) && TryGetEconItemByItemID(loadout.ItemId, out var oldItem))
             {
-                SOCache.RemoveObject(oldItem);
+                if (loadout.ItemId != GetDefaultGloveSkinItemID(skinData.Team))
+                {
+                    SOCache.RemoveObject(oldItem);
+                }
+
                 SODestroyed(SteamID, oldItem);
             }
 
@@ -289,7 +277,77 @@ public class CCSPlayerInventory : INativeHandle
             SOCache.AddObject(item);
             SOCreated(SteamID, item);
             SOUpdated(SteamID, item);
-            Console.WriteLine("UpdateGloveSkin: Item updated");
+        });
+    }
+
+    public ulong GetDefaultWeaponSkinItemID(Team team,
+        ushort definitionIndex)
+    {
+        for (var slot = 0; slot < (int)loadout_slot_t.LOADOUT_SLOT_COUNT; slot++)
+        {
+            if (Loadouts[team, slot].DefinitionIndex == definitionIndex)
+            {
+                return Loadouts[team, slot].ItemId;
+            }
+        }
+
+        return 0;
+    }
+
+    public ulong GetDefaultKnifeSkinItemID(Team team)
+    {
+        return _defaultLoadouts[team, loadout_slot_t.LOADOUT_SLOT_MELEE].ItemId;
+    }
+
+    public ulong GetDefaultGloveSkinItemID(Team team)
+    {
+        return _defaultLoadouts[team, loadout_slot_t.LOADOUT_SLOT_CLOTHING_HANDS].ItemId;
+    }
+
+    public void ResetWeaponSkin(Team team,
+        ushort definitionIndex)
+    {
+        Core.Scheduler.NextWorldUpdate(() =>
+        {
+            if (TryGetLoadoutItem(team, definitionIndex, out var indices))
+            {
+                ref var loadout = ref Loadouts[indices.team, indices.slot];
+                loadout = _defaultLoadouts[indices.team, indices.slot];
+                if (TryGetEconItemByItemID(loadout.ItemId, out var item))
+                {
+                    SOCreated(SteamID, item);
+                    SOUpdated(SteamID, item);
+                }
+            }
+        });
+    }
+
+    public void ResetKnifeSkin(Team team)
+    {
+        Core.Scheduler.NextWorldUpdate(() =>
+        {
+            ref var loadout = ref Loadouts[team, loadout_slot_t.LOADOUT_SLOT_MELEE];
+            loadout = _defaultLoadouts[team, loadout_slot_t.LOADOUT_SLOT_MELEE];
+            Console.WriteLine("ResetKnifeSkin: Reset to {0}", loadout.ToString());
+            if (TryGetEconItemByItemID(loadout.ItemId, out var item))
+            {
+                SOCreated(SteamID, item);
+                SOUpdated(SteamID, item);
+            }
+        });
+    }
+
+    public void ResetGloveSkin(Team team)
+    {
+        Core.Scheduler.NextWorldUpdate(() =>
+        {
+            ref var loadout = ref Loadouts[team, loadout_slot_t.LOADOUT_SLOT_CLOTHING_HANDS];
+            loadout = _defaultLoadouts[team, loadout_slot_t.LOADOUT_SLOT_CLOTHING_HANDS];
+            if (TryGetEconItemByItemID(loadout.ItemId, out var item))
+            {
+                SOCreated(SteamID, item);
+                SOUpdated(SteamID, item);
+            }
         });
     }
 }

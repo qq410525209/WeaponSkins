@@ -47,4 +47,10 @@ public class KnifeDataService
 
         return false;
     }
+
+    public bool TryRemoveKnife(ulong steamId,
+        Team team)
+    {
+        return _playerKnives.TryGetValue(steamId, out var teamKnives) && teamKnives.TryRemove(team, out _);
+    }
 }
