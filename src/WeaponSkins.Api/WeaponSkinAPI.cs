@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using SwiftlyS2.Shared.Players;
 
 using WeaponSkins.Database;
+using WeaponSkins.Econ;
 using WeaponSkins.Services;
 using WeaponSkins.Shared;
 
@@ -14,16 +15,28 @@ public class WeaponSkinAPI : IWeaponSkinAPI
     private InventoryService InventoryService { get; init; }
     private DataService DataService { get; init; }
     private StorageService StorageService { get; init; }
+    private EconService EconService { get; init; }
+
+    public IReadOnlyDictionary<string, ItemDefinition> Items => EconService.Items.AsReadOnly();
+
+    public IReadOnlyDictionary<string, List<PaintkitDefinition>> WeaponToPaintkits => EconService.WeaponToPaintkits.AsReadOnly();
+
+    public IReadOnlyDictionary<string, StickerCollectionDefinition> StickerCollections => EconService.StickerCollections.AsReadOnly();
+
+    public IReadOnlyDictionary<string, KeychainDefinition> Keychains => EconService.Keychains.AsReadOnly();
 
     public WeaponSkinAPI(InventoryUpdateService inventoryUpdateService,
         InventoryService inventoryService,
         DataService dataService,
-        StorageService storageService)
+        StorageService storageService,
+        EconService econService
+        )
     {
         InventoryUpdateService = inventoryUpdateService;
         InventoryService = inventoryService;
         DataService = dataService;
         StorageService = storageService;
+        EconService = econService;
     }
 
     public void SetWeaponSkins(IEnumerable<WeaponSkinData> skins,
