@@ -49,7 +49,7 @@ public class InventoryService
     private void OnSOCacheSubscribed(CCSPlayerInventory inventory,
         SOID_t soid)
     {
-        Logger.LogInformation($"SOCacheSubscribed: {soid.SteamID}");
+        // Logger.LogInformation($"SOCacheSubscribed: {soid.SteamID}");
         SubscribedInventories[soid.SteamID] = inventory;
     }
 
@@ -67,10 +67,10 @@ public class InventoryService
     public void UpdateWeaponSkins(ulong steamid,
         IEnumerable<WeaponSkinData> skins)
     {
-        Logger.LogInformation($"UpdateSkin: {steamid}");
+        // Logger.LogInformation($"UpdateSkin: {steamid}");
         if (SubscribedInventories.TryGetValue(steamid, out var inventory))
         {
-            Logger.LogInformation($"UpdateSkin: {steamid}");
+            // Logger.LogInformation($"UpdateSkin: {steamid}");
             foreach (var skin in skins)
             {
                 inventory.UpdateWeaponSkin(skin);
@@ -81,10 +81,10 @@ public class InventoryService
     public void UpdateKnifeSkins(ulong steamid,
         IEnumerable<KnifeSkinData> knives)
     {
-        Logger.LogInformation($"UpdateSkin: {steamid}");
+        // Logger.LogInformation($"UpdateSkin: {steamid}");
         if (SubscribedInventories.TryGetValue(steamid, out var inventory))
         {
-            Logger.LogInformation($"UpdateSkin: {steamid}");
+            // Logger.LogInformation($"UpdateSkin: {steamid}");
             foreach (var knife in knives)
             {
                 inventory.UpdateKnifeSkin(knife);
@@ -95,10 +95,10 @@ public class InventoryService
     public void UpdateGloveSkins(ulong steamid,
         IEnumerable<GloveData> gloves)
     {
-        Logger.LogInformation($"UpdateSkin: {steamid}");
+        // Logger.LogInformation($"UpdateSkin: {steamid}");
         if (SubscribedInventories.TryGetValue(steamid, out var inventory))
         {
-            Logger.LogInformation($"UpdateSkin: {steamid}");
+            // Logger.LogInformation($"UpdateSkin: {steamid}");
             foreach (var glove in gloves)
             {
                 inventory.UpdateGloveSkin(glove);

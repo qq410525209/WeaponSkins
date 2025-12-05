@@ -98,7 +98,7 @@ public class InventoryUpdateService
 
             if (PlayerService.TryGetPlayer(steamID, out var player))
             {
-                Logger.LogInformation($"Updating skins for player {player}. IsAlive: {player.IsAlive()}");
+                // Logger.LogInformation($"Updating skins for player {player}. IsAlive: {player.IsAlive()}");
                 if (player.IsAlive())
                 {
                     foreach (var skin in updatedSkins)
